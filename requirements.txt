@@ -1,0 +1,13 @@
+#blinker
+#certifi
+#configargparse
+#hpack
+#html2text
+mitmproxy
+#netlib
+#passlib
+#pyOpenSSL-0.14
+#pyperclip
+#tornado
+#urwid
+
