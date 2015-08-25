@@ -15,3 +15,7 @@ http://artsdigital.co/exploring-twitter-api-meteor-js/
 
 http://meteor.hromnik.com/blog/login-with-facebook-twitter-and-google-in-meteor
 
+http://fedoramagazine.org/build-network-router-firewall-fedora-22-systemd-networkd/
+
+http://wiki.archlinux.org/index.php/Systemd-networkd
+
