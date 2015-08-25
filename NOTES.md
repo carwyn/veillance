@@ -10,3 +10,8 @@ http://mhyfritz.com/blog/2014/08/16/reactive-d3-meteor/
 
 http://www.meteorpedia.com/read/DDP_Clients
 
+http://artsdigital.co/exploring-twitter-api-meteor-js/
+
+
+http://meteor.hromnik.com/blog/login-with-facebook-twitter-and-google-in-meteor
+
