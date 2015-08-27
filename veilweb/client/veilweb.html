@@ -18,14 +18,11 @@ document.addEventListener( 'dblclick', onDoubleckilck, false );
 
 // debug string var
 var debugstring = "TRELAWNEY Dr Livesey, and the rest of these gentlemen, having asked me to write down the whole particulars about Treasure Island, from the beginning to the end, keeping nothing back but the bearings of the island, and that only because there, is still treasure not yet lifted, I take up my pen in the year of, grace 17__ and go back to the time when my father kept the Admiral Benbow inn, and the brown old seaman with the sabre cut first took up his lodging under our roof, I remember him as if it were yesterday, as he came plodding to the inn door, his sea-chest following behind him in a hand-barrow—a tall, strong, heavy, nut-brown man, his tarry pigtail falling over the shoulder, of his soiled blue coat, his hands ragged and scarred, with black, broken nails, and the sabre cut across one cheek, a dirty, livid white. I remember him looking round the cover and whistling to himself as he did so, and then breaking out in that old sea-song that he sang so often afterwards";
-
 var debugstringarray = debugstring.split(",");
 
-
 function onDoubleckilck( event ) {
-  //addBranchFromStringArray(debugstringarray);
-  
-  startCameraMove();
+  addBranchFromStringArray(debugstringarray);
+  //startCameraMove();
  
 }
 
@@ -111,35 +108,27 @@ function init() {
     // make center of universe:
     var newpos = new THREE.Vector3(0, 0, 0);
     positions.push(newpos);
-    
-    
     startCameraMove();
 }
 
 
 function animate() {
     requestAnimationFrame(animate);
-
     TWEEN.update();
-  
-
     renderer.render(scene, camera);
     controls.update();
-
 }
 
 
 
 
 function startCameraMove(){
-  
      var p = Math.floor(Math.random() * positions.length);
      var pos = positions[p];
     // var t = Math.floor(Math.random() * positions.length);
     // var target = positions[t];
-
       tweenCamera(pos,pos);//target);
-        }
+       }
 
 
 
@@ -249,7 +238,6 @@ function branch(string, options, position, rotationAngle) {
     this.jointposition.x += this.textMesh.position.x;
     this.jointposition.y += this.textMesh.position.y;
     this.jointposition.z += this.textMesh.position.z;
-
     this.setRotaton = function(rotation) {
         this.rotationZ = rotation;
     };
@@ -257,7 +245,6 @@ function branch(string, options, position, rotationAngle) {
     this.getMesh = function() {
         return this.textMesh;
     };
-
     this.getJointPosition = function() {
         return this.jointposition;
     }
