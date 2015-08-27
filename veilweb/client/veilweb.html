@@ -23,13 +23,22 @@ var debugstringarray = debugstring.split(",");
 
 
 function onDoubleckilck( event ) {
-  addBranchFromStringArray(debugstringarray);
+  //addBranchFromStringArray(debugstringarray);
+  
+  startCameraMove();
+ 
 }
 
 // Set up the scene, camera, and renderer as global variables.
 var scene,
     camera,
     renderer;
+
+
+var cameraPositionTween;
+var cameraLookatTween;
+var cameraLookatPosition;
+
 
 var frame = 0;
 
@@ -98,13 +107,16 @@ function init() {
     var newpos = new THREE.Vector3(0, 0, 0);
     positions.push(newpos);
     
-    //test addingfunction
-    //addBranchFromStringArray(debugstringarray);
+    
+    startCameraMove();
 }
 
 
 function animate() {
     requestAnimationFrame(animate);
+
+    TWEEN.update();
+  
 
     renderer.render(scene, camera);
     controls.update();
@@ -112,8 +124,45 @@ function animate() {
 }
 
 
-function addBranchFromStringArray(stringarray) {
+
+
+function startCameraMove(){
+  
+     var p = Math.floor(Math.random() * positions.length);
+     var pos = positions[p];
+    // var t = Math.floor(Math.random() * positions.length);
+    // var target = positions[t];
+
+      tweenCamera(pos,pos);//target);
+        }
+
+
+
+    function handleAnimationComplete() {
+        startCameraMove();
+    }
     
+ function tweenCamera(position, target){
+
+    new TWEEN.Tween( camera.position  ).to( {
+    x: position.x,
+    y: position.y,
+    z: position.z+300
+    }, 8000 )
+    .easing( TWEEN.Easing.Sinusoidal.InOut).delay(2000).start().onComplete(handleAnimationComplete);
+
+    new TWEEN.Tween( controls.target).to( {
+    x: target.x,
+    y: target.y,
+    z: target.z
+    }, 3000 )
+    .easing( TWEEN.Easing.Sinusoidal.InOut).delay(1500).start();
+
+    }
+
+
+
+function addBranchFromStringArray(stringarray) {
     stringarray.forEach(function(entry) {
         // get random joint position
         var p = Math.floor(Math.random() * positions.length);
