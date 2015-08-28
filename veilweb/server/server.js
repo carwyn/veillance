@@ -1,4 +1,8 @@
 
+Meteor.publish("fragments", function () { 
+    return Fragments.find();
+});
+
 Meteor.startup(function () {
 
   Accounts.loginServiceConfiguration.remove({
