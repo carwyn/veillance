@@ -47,9 +47,9 @@ future to allow distribution of the data collectors and the
 
 #### Intercepting HTTP Proxy (Complete)
 
-Under the hood this is basically a Wifi Hotspot with a modified
-intercepting http proxy and DNS packet sniffer. This grabs any passing
-HTTP (not HTTPS) traffic and DNS requests.
+Under the hood this is basically a modified intercepting http proxy. This
+grabs any passing HTTP (not HTTPS) traffic stripping out and capturing the
+plain text in the web pages requested.
 
 To run this collector simply install `mitmproxy` (http://mitmproxy.org/):
 
@@ -64,7 +64,12 @@ $ mitmdump -q --stream 250k -s collectors/proxy/intercept.py
 ```
 
 For development purposes you can now configure your browser to use localhost
-on port 8080 as a HTTP proxy to test web page interception.
+on port 8080 as a HTTP proxy to test web page interception. Simply browse the
+web with the browser you've configured to use the proxy.
+
+***It's easier to use a different browser for capture to the one you are
+using to look at the visualization on port 3000 when developing.*** For example
+I use Chrome to view the visualization and Firefox to browse via the proxy.
 
 
 #### Snooping DNS Server
