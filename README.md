@@ -30,6 +30,23 @@ http://localhost:3000/
 To start collecting data, you then need to run one or more of the
 ***Data Collectors*** mentioned below.
 
+### Removing All Captured Data
+
+To remove all existing captured data from the MongoDB database use the Meteor
+MongoDB shell to get a MongoDB prompt. In the veilweb directory:
+
+```
+$ meteor mongo
+```
+
+You can then delete all the captured fragments using the following:
+
+```
+meteor:PRIMARY> db.fragments.remove({})
+```
+
+This will remove all existing entries.
+
 ## Technical Components
 
 ### Data Aggregator
