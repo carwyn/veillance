@@ -11,81 +11,118 @@ through the audience’s informed re-assumption of ownership over their personal
 information, and the re-assertion of everyday creativity and informed agency as
 we move through and engage with our public spaces.
 
- I've broken down
- the technical components into the following:
 
- # Back End 
+## Running The Development Version
 
- This part gathers data from the data collectors (see below) and makes
- them available to the front ends. This can run on the wifi gateway or
- in the cloud.
+The current front and back ends are combined as a single http://meteor.com/
+applciation. To start it simply run the following in the `veilweb` directory.
 
+```
+$ meteor run
+```
 
- # Data Collectors 
+You can then connect to the front end by pointing a web browser at:
 
- ## Local Sniffing Wifi Gateway (Prototype Complete) 
+```
+http://localhost:3000/
+```
 
- This is what I was talking about last week with Ronan, this can be
- installed at any exhibition initially. Later there will be a way for
- anyone to create one of these with as little as a Raspberry pi and a
- USB Wifi Dongle. I'd suggest this be the main thing we demo at FACT?
+To start collecting data, you then need to run one or more of the
+***Data Collectors*** mentioned below.
 
- Under the hood this is basically a Wifi Hotspot with a modified
- intercepting http proxy and DNS packet sniffer. This grabs any passing
- HTTP (not HTTPS) traffic and DNS requests.
+## Technical Components
 
+### Data Aggregator
 
- ##Twitter Scraper 
-
- Anyone that follows the Veillance twitter account will have their
- public tweets added to the pool of data.
-
- Anyone that signs in with Twitter will also have their public posts grabbed.
-
- ## Facebook Stalker 
-
- Anyone who friends the Veillance account will have their public
- visible posts grabbed.
-
- Anyone who signs in with FB will have anything they post grabbed (not messages).
+This part gathers data from the data collectors (see below) and makes
+them available to the front ends. This can run on the wifi gateway or
+in the cloud. In the prototype this is effectively a MongoDB database.
 
 
- ## Advertising Scheme Snooping 
+### Data Collectors 
 
- These depend on being a member of an advertising cartel like Amazon or
- Google Ad Words. These don't watch your actions as much as you might
- think.
+Currently the collectors all work by writing directly into the MongoDB
+database that forms part of the Meteor application. This will change in the
+future to allow distribution of the data collectors and the 
 
- ## Native Mobile Apps 
+#### Intercepting HTTP Proxy (Complete)
 
- IF we can get these built AND get them approved for the app stores
- (the hard part) they will grab any data the user has granted access
- to. I doubt the app stores will approve these though.
+Under the hood this is basically a Wifi Hotspot with a modified
+intercepting http proxy and DNS packet sniffer. This grabs any passing
+HTTP (not HTTPS) traffic and DNS requests.
 
+To run this collector simply install `mitmproxy` (http://mitmproxy.org/):
 
- # Front Ends 
+```
+$ pip install mitmproxy 
+```
 
- ## Web Visitor 
+Then run either `mitmproxy` or `mitmdump` using the http interceptor script:
 
- Available to desktop or mobile devices.
+```
+$ mitmdump -q --stream 250k -s collectors/proxy/intercept.py
+```
 
- This is the public/kiosk web site that has a view of the current
- animated text on it. Visitors will be able to sign up using Twitter or
- Facebook hence allowing their respective data collectors (see above).
-
- Note that there is a VERY limited amount of data that we can grab from
- mobile browsers, for example:
-
- Camera and Microphone:
- http://www.html5rocks.com/en/tutorials/getusermedia/intro/
-
- Geolocation:
- http://www.html5rocks.com/en/tutorials/geolocation/trip_meter/
-
- .. and only after a browser popup.
+For development purposes you can now configure your browser to use localhost
+on port 8080 as a HTTP proxy to test web page interception.
 
 
- ## Exhibition Mode 
+#### Snooping DNS Server
 
- This is just a full screen version of the current playing animation.
+TODO.
+
+
+#### Twitter Scraper 
+
+Anyone that follows the Veillance twitter account will have their
+public tweets added to the pool of data.
+
+Anyone that signs in with Twitter will also have their public posts grabbed.
+
+#### Facebook Stalker 
+
+Anyone who friends the Veillance account will have their public
+visible posts grabbed.
+
+Anyone who signs in with FB will have anything they post grabbed (not messages).
+
+
+#### Advertising Scheme Snooping 
+
+These depend on being a member of an advertising cartel like Amazon or
+Google Ad Words. These don't watch your actions as much as you might
+think.
+
+#### Mobile Apps 
+
+IF we can get these built AND get them approved for the app stores
+(the hard part) they will grab any data the user has granted access
+to. I doubt the app stores will approve these though.
+
+
+## Front Ends 
+
+### Web Visitor 
+
+Available to desktop or mobile devices.
+
+This is the public/kiosk web site that has a view of the current
+animated text on it. Visitors will be able to sign up using Twitter or
+Facebook hence allowing their respective data collectors (see above).
+
+Note that there is a VERY limited amount of data that we can grab from
+mobile browsers, for example:
+
+Camera and Microphone:
+http://www.html5rocks.com/en/tutorials/getusermedia/intro/
+
+Geolocation:
+http://www.html5rocks.com/en/tutorials/geolocation/trip_meter/
+
+.. and only after a browser popup.
+
+
+### Exhibition Mode 
+
+This is just a full screen version of the current playing animation.
 
