@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 import cStringIO
 from PIL import Image
 from libmproxy.script import concurrent
@@ -7,7 +7,15 @@ from pymongo import MongoClient
 
 client = MongoClient("mongodb://localhost:3001/")
 
-@concurrent
+only_tags = [
+    'a','p','ul','ol','dl','div','tt','code','blockquote','pre','table',
+    'header','h1','h2','h3','h4','h5','h6'
+]
+
+only = SoupStrainer(only_tags)
+
+
+#@concurrent
 def response(context, flow):
 
     cont_type = flow.response.headers.get_first("content-type", "")
@@ -29,12 +37,10 @@ def response(context, flow):
         with decoded(flow.response):
             print "MATCHED: ", cont_type
             content = flow.response.content
-            soup = BeautifulSoup(flow.response.content, "lxml")
-            #[s.decompose() for s in soup.find_all('script')]
-            #[s.decompose() for s in soup.find_all('style')]
+            soup = BeautifulSoup(flow.response.content,"lxml",parse_only=only)
             cleaned = ' '.join(soup.get_text().split())
             if cleaned:
                 print cleaned
-                client.meteor.fragments.insert({'text': cleaned})
+                #client.meteor.fragments.insert({'text': cleaned})
 
 

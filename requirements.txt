@@ -1,13 +1,24 @@
-#blinker
-#certifi
-#configargparse
-#hpack
-#html2text
+
+# Installed by RPM:
+python-pillow
+python-pymongo
+python-beautifulsoup4
+python-html2text
+python-cryptography
+python-urwid
+python-devel
+libffi
+libffi-devel
+openssl-devel
+pyOpenSSL
+python-netlib
+python-certifi
+python-blinker
+python-passlib
+
+
+pymongo
 mitmproxy
-#netlib
-#passlib
-#pyOpenSSL-0.14
-#pyperclip
-#tornado
-#urwid
+Pillow
+beautifulsoup4
 
