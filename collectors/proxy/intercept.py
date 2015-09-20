@@ -41,6 +41,6 @@ def response(context, flow):
             cleaned = ' '.join(soup.get_text().split())
             if cleaned:
                 print cleaned
-                #client.meteor.fragments.insert({'text': cleaned})
+                client.meteor.fragments.insert({'text': cleaned})
 
 
