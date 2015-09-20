@@ -11,11 +11,23 @@ through the audience’s informed re-assumption of ownership over their personal
 information, and the re-assertion of everyday creativity and informed agency as
 we move through and engage with our public spaces.
 
+## Prerequisites
+
+To run the Veillance front end you must have a modern web browser that
+supports WebGL. Note that there can be a small delay as the 3D image is
+initially generated.
 
 ## Running The Development Version
 
 The current front and back ends are combined as a single http://meteor.com/
-applciation. To start it simply run the following in the `veilweb` directory.
+applciation. To install meteor follow the instructions as per the Meteor
+home page, namely:
+
+```
+$ curl https://install.meteor.com/ | sh
+```
+
+Then to start Veillance simply run the following in the `veilweb` directory.
 
 ```
 $ meteor run
@@ -68,10 +80,15 @@ Under the hood this is basically a modified intercepting http proxy. This
 grabs any passing HTTP (not HTTPS) traffic stripping out and capturing the
 plain text in the web pages requested.
 
-To run this collector simply install `mitmproxy` (http://mitmproxy.org/):
+This collector uses `mitmproxy` (http://mitmproxy.org/) and an inline script.
+
+To install `mitmproxy` and all the requirement the collector script needs run
+the following on OS X or Linux (you can also pull in some of the requiremetns
+with Brew or RPM, see notes in `requirements.txt`):
+
 
 ```
-$ pip install mitmproxy 
+$ pip install -r requirements.txt
 ```
 
 Then run either `mitmproxy` or `mitmdump` using the http interceptor script:
