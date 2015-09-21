@@ -29,7 +29,10 @@ Tracker.autorun(function () {
 Fragments.find().observe({
     added: function (fragment) {
         console.log("Added: ", fragment.text);
-        addBranchFromStringArray(fragment.text.split(","));
+
+        bits = Meteor.utils.wordwrap(fragment.text)
+
+        addBranchFromStringArray(bits);
     }
 });
 
