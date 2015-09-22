@@ -94,7 +94,7 @@ $ pip install -r requirements.txt
 Then run either `mitmproxy` or `mitmdump` using the http interceptor script:
 
 ```
-$ mitmdump -q --stream 250k -s collectors/proxy/intercept.py
+$ mitmdump -q -s collectors/proxy/intercept.py
 ```
 
 For development purposes you can now configure your browser to use localhost
