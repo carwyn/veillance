@@ -133,7 +133,7 @@ var Stats = function () {
 		},
 		
 		getFPS: function () {
-        return [fpsMin,fpsMax];
+        return [fps,fpsMin,fpsMax];
     	},
 
 		
