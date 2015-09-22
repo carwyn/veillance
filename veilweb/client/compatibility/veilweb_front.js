@@ -229,6 +229,7 @@ function removeOldestBranch() {
     if(branches.length >0){
     var branch_to_remove=branches.shift();
    scene.remove(branch_to_remove.getMesh());
+   positions.shift();
     
 }
     console.log(scene.children.length+ " "+positions.length);
