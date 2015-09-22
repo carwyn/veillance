@@ -2,6 +2,7 @@
   <title>Veillance</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
 </head>
 
 <body>
@@ -15,5 +16,16 @@
     animate();
 
   </script>
+  
+  <div id="inputs">
+    <input id="regular_button" type="radio" data-mode="regular" name="cameramode" value="regular" onclick="handleClick(this);" checked><label for="regular_button"> Regular</label><br/>
+    <input id="flycam_button" type="radio" data-mode="flycam" name="cameramode" value="flycam" onclick="handleClick(this);"><label for="flycam_button"> Fly</label><br/>
+    <input id="device_orientation_button" type="radio" data-mode="device_orientation" name="cameramode" value="device_orientation" onclick="handleClick(this);"><label for="device_orientation_button"> Device Orientation</label>
+</div>
+
+
+
+  
+  
 </body>
 

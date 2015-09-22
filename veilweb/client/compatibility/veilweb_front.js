@@ -8,10 +8,6 @@ window.addEventListener("keydown", onkeypress, false);
 var debugstring = "TRELAWNEY Dr Livesey, and the rest of these gentlemen, having asked me to write down the whole particulars about Treasure Island, from the beginning to the end, keeping nothing back but the bearings of the island, and that only because there, is still treasure not yet lifted, I take up my pen in the year of, grace 17__ and go back to the time when my father kept the Admiral Benbow inn, and the brown old seaman with the sabre cut first took up his lodging under our roof, I remember him as if it were yesterday, as he came plodding to the inn door, his sea-chest following behind him in a hand-barrow—a tall, strong, heavy, nut-brown man, his tarry pigtail falling over the shoulder, of his soiled blue coat, his hands ragged and scarred, with black, broken nails, and the sabre cut across one cheek, a dirty, livid white. I remember him looking round the cover and whistling to himself as he did so, and then breaking out in that old sea-song that he sang so often afterwards";
 var debugstringarray = debugstring.split(",");
 
-function onDoubleckilck( event ) {
-  //startCameraMove();
-
-    }
 
     function onkeypress(event) {
         var code = event.keyCode ? event.keyCode : event.which;
@@ -32,12 +28,27 @@ function onDoubleckilck( event ) {
 var scene,
     camera,
     renderer;
+    
+    
+    function onDoubleckilck( event ) {
+  
+       var p = Math.floor(Math.random() * positions.length);
+       var pos = positions[p];
+       
+       controls.target.set(pos.x,pos.y,pos.z);
+
+    }
+
+    
 
 
 var cameraPositionTween;
 var cameraLookatTween;
 var cameraLookatPosition;
-
+var cameraMode="regular";
+var REGULARMODE=1;
+var FLYMODE=2;
+var DEVICEORIENTATIONMODE=3;
 
 var frame = 0;
 
@@ -95,7 +106,7 @@ function init() {
 
     // camera
         camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 20000);
-        camera.position.set(0, 20, 20);
+        camera.position.set(0, 20, 200);
         scene.add(camera);
         controls = new THREE.OrbitControls(camera, renderer.domElement);
        
@@ -137,9 +148,14 @@ function init() {
 
 function animate() {
     requestAnimationFrame(animate);
-    TWEEN.update();
+    if(cameraMode==FLYMODE)TWEEN.update();
+    
+          var delta = clock.getDelta();
+
     renderer.render(scene, camera);
-    controls.update();
+   // controls.update();
+      controls.update(delta);
+    
     stats.update();
     var f=stats.getFPS();
     var deltaframerate=(f[0]+oldFramerate)/2;
@@ -294,3 +310,47 @@ function branch(string, options, position, rotationAngle) {
         return this.jointposition;
     }
 }
+
+
+
+function switchCameraMode(_mode) {
+    
+      var prevCamera = camera;
+      var WIDTH = window.innerWidth;
+      var HEIGHT = window.innerHeight;
+
+    camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 20000);
+    camera.position.copy( prevCamera.position );
+    camera.rotation.copy( prevCamera.rotation );
+    
+    
+
+    switch(_mode) {
+    // VIPs are awesome. Give them 50% off.
+    case 'regular':
+        cameraMode = REGULARMODE;
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        break;
+  
+    case 'flycam':
+        cameraMode = FLYMODE;
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        break;
+
+    case 'device_orientation':
+        camera.position.set(0, 20, 20);
+        cameraMode = DEVICEORIENTATIONMODE;
+        controls= new THREE.DeviceOrientationControls( camera );
+
+        break;
+    }
+    console.log("New camera mode: "+cameraMode);
+}
+
+function handleClick(myRadio) {
+    switchCameraMode(myRadio.value);
+    console.log(myRadio.value);
+}
+
+
+
