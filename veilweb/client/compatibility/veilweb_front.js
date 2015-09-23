@@ -76,10 +76,12 @@ var textMesh;
 
 // framerate 
 var container, stats;
-var lowFramerateTrigger=40;
+var lowFramerateTrigger=30;
 var oldFramerate;
 var clock = new THREE.Clock(); 
- 
+var removeBranchTimeTrigger=10;
+var removeTime= clock.getElapsedTime();  
+var timeBufferBeforeNextRemove=1;
 
 
 
@@ -160,13 +162,17 @@ function animate() {
     var deltaframerate=(f[0]+oldFramerate)/2;
     
   
+  
     //after starting up, check framerate to delete branches
-     var time = clock.getElapsedTime();     
-    if (time > 10 && deltaframerate<lowFramerateTrigger){
-    console.log("!!!!!!!!! Alert low framerate " +deltaframerate + " Time "+time);
+     var time = clock.getElapsedTime();  
+     var deltaTime=time-removeTime;   
+    if (deltaTime > removeBranchTimeTrigger && deltaframerate<lowFramerateTrigger){
+    console.log("!Alert low framerate " +deltaframerate);
     removeOldestBranch();
+    removeTime=clock.getElapsedTime(); 
+    removeBranchTimeTrigger=timeBufferBeforeNextRemove;
     }
-     oldFramerate = f;
+     oldFramerate = f[0];
 }
 
 
