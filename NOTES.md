@@ -1,3 +1,8 @@
+
+http://eprints.soton.ac.uk/264285/1/MarchandAdsettDamper_ISCA07.pdf
+
+https://gist.github.com/djinn/53442f077a6b9dc110b4
+
 https://github.com/meteor/meteor/wiki/Oplog-Observe-Driver
 
 http://crossbar.io/
