@@ -9,7 +9,7 @@ import (
 	"github.com/antage/eventsource"
 )
 
-var fragments = [...]string{
+var bricksong = [...]string{
 	"Dear Sir I write this note to inform you of my plight",
 	"And at the time of writing I am not a pretty sight",
 	"My body is all black and blue, my face a deathly gray",
@@ -51,6 +51,16 @@ var fragments = [...]string{
 	"That I hope you'll understand why Paddy's not at work today.",
 }
 
+type User struct {
+	Name string
+}
+
+type Fragment struct {
+	Id int
+	*User
+	Text string
+}
+
 func main() {
 	es := eventsource.New(
 		&eventsource.Settings{
@@ -62,6 +72,9 @@ func main() {
 			return [][]byte{
 				[]byte("X-Accel-Buffering: no"),
 				[]byte("Access-Control-Allow-Origin: *"),
+				[]byte("Content-Type: text/event-stream"),
+				[]byte("Cache-Control: no-cache"),
+				[]byte("Connection: keep-alive"),
 			}
 		},
 	)
@@ -69,9 +82,9 @@ func main() {
 	http.Handle("/events", es)
 	go func() {
 		id := 0
-		l := len(fragments)
+		l := len(bricksong)
 		for {
-			es.SendEventMessage(fragments[id%l], "fragment", strconv.Itoa(id))
+			es.SendEventMessage(bricksong[id%l], "fragment", strconv.Itoa(id))
 			id++
 			time.Sleep(1 * time.Second)
 		}
