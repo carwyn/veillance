@@ -1,5 +1,13 @@
 http://stackoverflow.com/questions/405161/detecting-syllables-in-a-word
 
+https://libraries.io/go/github.com%2FBluntSporks%2Freadability
+
+https://github.com/ernestas-poskus/syllables/blob/master/syllables.go
+
+https://golanglibs.com/top?q=syllables
+
+https://gist.github.com/djinn/53442f077a6b9dc110b4
+
 http://www.tug.org/docs/liang/
 
 https://github.com/karmapa/syllable-parser
