@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -51,13 +52,14 @@ var bricksong = [...]string{
 	"That I hope you'll understand why Paddy's not at work today.",
 }
 
-type User struct {
+type Source struct {
 	Name string
+	Type string
 }
 
 type Fragment struct {
 	Id int
-	*User
+	Source
 	Text string
 }
 
@@ -84,7 +86,10 @@ func main() {
 		id := 0
 		l := len(bricksong)
 		for {
-			es.SendEventMessage(bricksong[id%l], "fragment", strconv.Itoa(id))
+			j := id % l
+			f := Fragment{j, Source{Name: "Bob", Type: "User"}, bricksong[j]}
+			js, _ := json.Marshal(f)
+			es.SendEventMessage(string(js), "fragment", strconv.Itoa(id))
 			id++
 			time.Sleep(1 * time.Second)
 		}
