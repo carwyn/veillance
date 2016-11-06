@@ -1,3 +1,22 @@
+http://stackoverflow.com/questions/405161/detecting-syllables-in-a-word
+
+https://libraries.io/go/github.com%2FBluntSporks%2Freadability
+
+https://github.com/ernestas-poskus/syllables/blob/master/syllables.go
+
+https://golanglibs.com/top?q=syllables
+
+https://gist.github.com/djinn/53442f077a6b9dc110b4
+
+http://www.tug.org/docs/liang/
+
+https://github.com/karmapa/syllable-parser
+
+https://github.com/wooorm/syllable
+
+https://sourceforge.net/projects/syllableparser/
+
+https://www.google.com/patents/US6188984
 
 http://eprints.soton.ac.uk/264285/1/MarchandAdsettDamper_ISCA07.pdf
 
