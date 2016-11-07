@@ -13,7 +13,7 @@
 
 .. this will then start printing out the live stream of sample data.
 
-# Data Format =
+# Data Format
 
 The data sent out via http://localhost:8080/events is a HTTP Server Sent Events
 stream also known as an EventSource stream. This is just a continual stream of
