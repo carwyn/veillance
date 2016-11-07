@@ -3,12 +3,33 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/antage/eventsource"
 )
+
+var domains = [...]string{
+	"facebook.com",
+	"disney.com",
+	"google.com",
+	"microsoft.com",
+	"foobar.io",
+	"fast.com",
+	"netflix.com",
+	"anandtech.com",
+	"arstechnica.com",
+	"www.bbc.co.uk",
+	"tumblr.com",
+	"instagram.com",
+	"twitter.com",
+	"phoronix.com",
+	"channel4.com",
+	"theregister.co.uk",
+	"gov.uk",
+}
 
 var bricksong = [...]string{
 	"Dear Sir I write this note to inform you of my plight",
@@ -63,6 +84,17 @@ type Fragment struct {
 	Text string
 }
 
+type Selection struct {
+	Fid   int
+	Words []int
+}
+
+type Domain struct {
+	Id int
+	Source
+	Text string
+}
+
 func main() {
 	es := eventsource.New(
 		&eventsource.Settings{
@@ -80,18 +112,36 @@ func main() {
 			}
 		},
 	)
+
+	// Fixed seed so pattern is repeatable.
+	rand.Seed(42)
+
 	defer es.Close()
 	http.Handle("/events", es)
 	go func() {
-		id := 0
-		l := len(bricksong)
+		i, id := 0, 0
+		bl := len(bricksong)
+		dl := len(domains)
 		for {
-			j := id % l
-			f := Fragment{j, Source{Name: "Bob", Type: "User"}, bricksong[j]}
-			js, _ := json.Marshal(f)
-			es.SendEventMessage(string(js), "fragment", strconv.Itoa(id))
+			bi := i % bl
+			di := i % dl
+			f := Fragment{bi, Source{Name: "SimUser", Type: "User"}, bricksong[bi]}
+			d := Domain{di, Source{Name: "SimUser", Type: "User"}, domains[di]}
+			jsb, _ := json.Marshal(f)
+			jsd, _ := json.Marshal(d)
+			es.SendEventMessage(string(jsb), "fragment", strconv.Itoa(id))
 			id++
-			time.Sleep(1 * time.Second)
+			es.SendEventMessage(string(jsd), "domain", strconv.Itoa(id))
+			id++
+
+			if i > bl {
+				s := Selection{rand.Intn(bl), []int{1, 3}}
+				jss, _ := json.Marshal(s)
+				es.SendEventMessage(string(jss), "selection", strconv.Itoa(id))
+				id++
+			}
+			i++
+			time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 		}
 	}()
 	log.Fatal(http.ListenAndServe(":8080", nil))
