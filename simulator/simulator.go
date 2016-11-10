@@ -113,9 +113,6 @@ func main() {
 		},
 	)
 
-	// Fixed seed so pattern is repeatable.
-	rand.Seed(42)
-
 	defer es.Close()
 	http.Handle("/events", es)
 	go func() {
