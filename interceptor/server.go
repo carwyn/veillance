@@ -83,7 +83,7 @@ type Client struct {
 	id     int
 	ws     *websocket.Conn
 	server *Server
-	ch     chan *Message
+	ch     chan Message
 	doneCh chan bool
 }
 
@@ -99,7 +99,7 @@ func NewClient(ws *websocket.Conn, server *Server) *Client {
 	}
 
 	maxId++
-	ch := make(chan *Message, channelBufSize)
+	ch := make(chan Message, channelBufSize)
 	doneCh := make(chan bool)
 
 	return &Client{maxId, ws, server, ch, doneCh}
@@ -109,7 +109,7 @@ func (c *Client) Conn() *websocket.Conn {
 	return c.ws
 }
 
-func (c *Client) Write(msg *Message) {
+func (c *Client) Write(msg Message) {
 	select {
 	case c.ch <- msg:
 	default:
@@ -198,34 +198,37 @@ type Domain struct {
 	Text string
 }
 
-type Message struct {
-	Author string `json:"author"`
-	Body   string `json:"body"`
+//type Message struct {
+//	Author string `json:"author"`
+//	Body   string `json:"body"`
+//}
+
+type Message interface {
 }
 
-func (self *Message) String() string {
-	return self.Author + " says " + self.Body
-}
+//func (self *Message) String() string {
+//	return self.Author + " says " + self.Body
+//}
 
 // Chat server.
 type Server struct {
 	pattern   string
-	messages  []*Message
+	messages  []Message
 	clients   map[int]*Client
 	addCh     chan *Client
 	delCh     chan *Client
-	sendAllCh chan *Message
+	sendAllCh chan Message
 	doneCh    chan bool
 	errCh     chan error
 }
 
 // Create new chat server.
 func NewServer(pattern string) *Server {
-	messages := []*Message{}
+	messages := []Message{}
 	clients := make(map[int]*Client)
 	addCh := make(chan *Client)
 	delCh := make(chan *Client)
-	sendAllCh := make(chan *Message)
+	sendAllCh := make(chan Message)
 	doneCh := make(chan bool)
 	errCh := make(chan error)
 
@@ -249,7 +252,7 @@ func (s *Server) Del(c *Client) {
 	s.delCh <- c
 }
 
-func (s *Server) SendAll(msg *Message) {
+func (s *Server) SendAll(msg Message) {
 	s.sendAllCh <- msg
 }
 
@@ -267,7 +270,7 @@ func (s *Server) sendPastMessages(c *Client) {
 	}
 }
 
-func (s *Server) sendAll(msg *Message) {
+func (s *Server) sendAll(msg Message) {
 	for _, c := range s.clients {
 		c.Write(msg)
 	}
@@ -312,7 +315,8 @@ func (s *Server) Listen() {
 
 		// broadcast message for all clients
 		case msg := <-s.sendAllCh:
-			log.Println("Send all:", msg)
+			js, _ := json.Marshal(msg)
+			log.Println("Send all:", string(js))
 			s.messages = append(s.messages, msg)
 			s.sendAll(msg)
 
@@ -334,15 +338,18 @@ func simulate(server *Server) {
 		di := i % dl
 		f := Fragment{bi, Source{Name: "SimUser", Type: "User"}, bricksong[bi]}
 		d := Domain{di, Source{Name: "SimUser", Type: "User"}, domains[di]}
-		jsb, _ := json.Marshal(f)
-		jsd, _ := json.Marshal(d)
-		server.SendAll(&Message{"Bob", string(jsb)})
-		server.SendAll(&Message{"Bob", string(jsd)})
+		//jsb, _ := json.Marshal(f)
+		//jsd, _ := json.Marshal(d)
+		server.SendAll(f)
+		server.SendAll(d)
+		//server.SendAll(&Message{"Bob", string(jsb)})
+		//server.SendAll(&Message{"Bob", string(jsd)})
 
 		if i > bl {
 			s := Selection{rand.Intn(bl), []int{1, 3}}
-			jss, _ := json.Marshal(s)
-			server.SendAll(&Message{"Bob", string(jss)})
+			//jss, _ := json.Marshal(s)
+			//server.SendAll(&Message{"Bob", string(jss)})
+			server.SendAll(s)
 		}
 		i++
 		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<title>Sample of websocket with golang</title>
+<script>
+var exampleSocket = new WebSocket("ws://localhost:8080/entry", "json");
+
+exampleSocket.onmessage = function(event) {
+
+    console.log(event);
+    var msg = JSON.parse(event.data);
+}                
+</script>
+</head>
+<body>
+
+
+<body>
+</html>
