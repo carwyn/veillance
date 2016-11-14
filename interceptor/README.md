@@ -3,7 +3,12 @@
 
 * Install Go as for simulator.
 * go get golang.org/x/net/websocket
-* go run server.go
+* git clone git@github.com:BangorUniversity/veillance.git
+OR if you don't have SSH working:
+* git clone https://github.com/BangorUniversity/veillance.git
+* cd interceptor
+* go build
+* ./server
 
 # Connecting to the Websocket Server
 
