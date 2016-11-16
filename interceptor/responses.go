@@ -12,11 +12,13 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
 	"github.com/google/gopacket/layers"
@@ -57,48 +59,54 @@ func (h *httpStreamFactory) New(net, transport gopacket.Flow) tcpassembly.Stream
 func (h *httpStream) run() {
 	buf := bufio.NewReader(&h.r)
 	for {
-		req, err := http.ReadResponse(buf, nil)
-		if err == io.EOF {
+		resp, err := http.ReadResponse(buf, nil)
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
 			// We must read until we see an EOF... very important!
 			return
-		} else if err == io.ErrUnexpectedEOF {
-			// Probably just a malformed end of response.
-			return
 		} else if err != nil {
-			log.Println("Error reading stream", h.net, h.transport, ":", err)
+			log.Println("ERROR IN RESPONSE:", h.net, ":", resp.Status, err)
 		} else {
 
-			contentType := req.Header["Content-Type"]
+			// HTTP 1.1 default charset is ISO-8859-1
+			// text/html; charset=utf-8
+			contentType := resp.Header["Content-Type"][0]
 
-			log.Println("TYPE: ", contentType)
+			switch contentType {
+			// TODO: ASCII, ANSI (Windows-1252)
+			case "text/html; charset=utf-8":
+				// Default charset for HTML5
+				// TODO: May need to use NewDocumentFromNode after manually parsing
+				// the body stream if goquery can't deal with the content.
+				doc, qerr := goquery.NewDocumentFromResponse(resp)
+				if qerr != nil {
+					log.Println("PARSE ERROR:", qerr)
+				}
+				// TODO: Do something with it.
+				fmt.Println(doc)
 
-			//bodyBytes := tcpreader.DiscardBytesToEOF(req.Body)
+			case "text/html; charset=ISO-8859-1":
+				// Default charset before HTML5
+				// TODO: Do something with it, e.g. convert with iconv.
+			default:
+				log.Println("UNUSED TYPE:", contentType)
+			}
 
 			for {
-				bytes, err := tcpreader.DiscardBytesToFirstError(req.Body)
+				bytes, err := tcpreader.DiscardBytesToFirstError(resp.Body)
 
-				if err == io.EOF {
-					log.Println("EOF:", h.net, h.transport, ":", err)
-					break
-
-				} else if err == io.ErrUnexpectedEOF {
-					log.Println("UEOF:", h.net, h.transport, ":", err, bytes)
+				if err == io.EOF || err == io.ErrUnexpectedEOF {
 					break
 
 				} else if err != nil && bytes == 0 {
-					log.Println("ERROR BUT ZERO:", h.net, h.transport, ":", err, ":", bytes)
+					log.Println("ERROR BUT ZERO:", h.net, ":", err, ":", bytes)
 					break
 
 				} else if err != nil {
-
-					log.Println("ERROR:", h.net, h.transport, ":", err, ":", bytes)
+					log.Println("ERROR NOT ZERO:", h.net, ":", err, ":", bytes)
 				}
 			}
-
-			req.Body.Close()
-			//log.Println("Received response from stream", h.net, h.transport, ":", req)
-			log.Println("Received response from stream", h.net, h.transport)
-
+			resp.Body.Close()
+			log.Println(h.net, ":", contentType, resp.Status)
 		}
 	}
 }
