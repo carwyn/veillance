@@ -13,7 +13,7 @@ https://www.youtube.com/watch?v=HxaD_trXwRE
 http://blog.davidsingleton.org/parsing-huge-xml-files-with-go/
 https://github.com/kokardy/saxlike
 
-
+https://github.com/sourcegraph/webloop
 
 http://stackoverflow.com/questions/405161/detecting-syllables-in-a-word
 
