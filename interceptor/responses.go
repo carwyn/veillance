@@ -72,9 +72,20 @@ func (h *httpStream) run() {
 
 			log.Println("TYPE: ", contentType)
 
-			bodyBytes := tcpreader.DiscardBytesToEOF(req.Body)
+			//bodyBytes := tcpreader.DiscardBytesToEOF(req.Body)
+
+			for {
+				_, err := tcpreader.DiscardBytesToFirstError(req.Body)
+				if err == io.EOF {
+					log.Println("EOF:", h.net, h.transport, ":", err)
+
+				} else {
+					log.Println("ERROR:", h.net, h.transport, ":", err)
+				}
+			}
+
 			req.Body.Close()
-			log.Println("Received response from stream", h.net, h.transport, ":", req, "with", bodyBytes, "bytes in response body")
+			log.Println("Received response from stream", h.net, h.transport, ":", req)
 
 		}
 	}
