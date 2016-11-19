@@ -62,7 +62,7 @@ func (h *httpStream) run() {
 			// We must read until we see an EOF... very important!
 			return
 		} else if err == io.ErrUnexpectedEOF {
-			// TODO: Not sure what to do with these.
+			// Probably just a malformed end of response.
 			return
 		} else if err != nil {
 			log.Println("Error reading stream", h.net, h.transport, ":", err)
@@ -78,8 +78,11 @@ func (h *httpStream) run() {
 				_, err := tcpreader.DiscardBytesToFirstError(req.Body)
 				if err == io.EOF {
 					log.Println("EOF:", h.net, h.transport, ":", err)
-
-				} else {
+					break
+				} else if err == io.ErrUnexpectedEOF {
+					log.Println("UEOF:", h.net, h.transport, ":", err)
+					break
+				} else if err != nil {
 					log.Println("ERROR:", h.net, h.transport, ":", err)
 				}
 			}
