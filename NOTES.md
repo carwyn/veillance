@@ -1,3 +1,20 @@
+
+
+https://github.com/PuerkitoBio/goquery
+https://github.com/ericchiang/pup
+https://github.com/yhat/scrape
+https://godoc.org/golang.org/x/net/html
+
+https://github.com/microcosm-cc/bluemonday
+https://github.com/endeveit/guesslanguage
+
+https://www.youtube.com/watch?v=HxaD_trXwRE
+
+http://blog.davidsingleton.org/parsing-huge-xml-files-with-go/
+https://github.com/kokardy/saxlike
+
+
+
 http://stackoverflow.com/questions/405161/detecting-syllables-in-a-word
 
 https://libraries.io/go/github.com%2FBluntSporks%2Freadability
