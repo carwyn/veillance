@@ -75,20 +75,29 @@ func (h *httpStream) run() {
 			//bodyBytes := tcpreader.DiscardBytesToEOF(req.Body)
 
 			for {
-				_, err := tcpreader.DiscardBytesToFirstError(req.Body)
+				bytes, err := tcpreader.DiscardBytesToFirstError(req.Body)
+
 				if err == io.EOF {
 					log.Println("EOF:", h.net, h.transport, ":", err)
 					break
+
 				} else if err == io.ErrUnexpectedEOF {
-					log.Println("UEOF:", h.net, h.transport, ":", err)
+					log.Println("UEOF:", h.net, h.transport, ":", err, bytes)
 					break
+
+				} else if err != nil && bytes == 0 {
+					log.Println("ERROR BUT ZERO:", h.net, h.transport, ":", err, ":", bytes)
+					break
+
 				} else if err != nil {
-					log.Println("ERROR:", h.net, h.transport, ":", err)
+
+					log.Println("ERROR:", h.net, h.transport, ":", err, ":", bytes)
 				}
 			}
 
 			req.Body.Close()
-			log.Println("Received response from stream", h.net, h.transport, ":", req)
+			//log.Println("Received response from stream", h.net, h.transport, ":", req)
+			log.Println("Received response from stream", h.net, h.transport)
 
 		}
 	}
