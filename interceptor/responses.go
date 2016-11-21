@@ -18,6 +18,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/html"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
@@ -64,31 +66,33 @@ func (h *httpStream) run() {
 			// We must read until we see an EOF... very important!
 			return
 		} else if err != nil {
-			log.Println("ERROR IN RESPONSE:", h.net, ":", resp.Status, err)
+			//log.Println("ERROR IN RESPONSE:", h.net, ":", err)
 		} else {
 
-			// HTTP 1.1 default charset is ISO-8859-1
-			// text/html; charset=utf-8
-			contentType := resp.Header["Content-Type"][0]
+			contentType := resp.Header["Content-Type"]
+			if len(contentType) != 0 {
 
-			switch contentType {
-			// TODO: ASCII, ANSI (Windows-1252)
-			case "text/html; charset=utf-8":
-				// Default charset for HTML5
-				// TODO: May need to use NewDocumentFromNode after manually parsing
-				// the body stream if goquery can't deal with the content.
-				doc, qerr := goquery.NewDocumentFromResponse(resp)
-				if qerr != nil {
-					log.Println("PARSE ERROR:", qerr)
+				switch contentType[0] {
+				// TODO: ASCII, ANSI (Windows-1252)
+				case "text/html; charset=utf-8", "text/html; charset=UTF-8":
+					// Default charset for HTML5
+					fmt.Println("FOUND ONE:", contentType)
+
+					body, perr := html.Parse(resp.Body)
+					if perr != nil {
+						log.Println("PARSE ERROR:", perr)
+						break
+					} else {
+						doc := goquery.NewDocumentFromNode(body)
+						fmt.Println("DOC:", doc.Find("h1").Text())
+					}
+
+				case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
+					// Default charset before HTML5
+					// TODO: Do something with it, e.g. convert with iconv.
+				default:
+					//log.Println("UNUSED TYPE:", contentType)
 				}
-				// TODO: Do something with it.
-				fmt.Println(doc)
-
-			case "text/html; charset=ISO-8859-1":
-				// Default charset before HTML5
-				// TODO: Do something with it, e.g. convert with iconv.
-			default:
-				log.Println("UNUSED TYPE:", contentType)
 			}
 
 			for {
@@ -106,7 +110,7 @@ func (h *httpStream) run() {
 				}
 			}
 			resp.Body.Close()
-			log.Println(h.net, ":", contentType, resp.Status)
+			//log.Println(h.net, ":", contentType, resp.Status)
 		}
 	}
 }
