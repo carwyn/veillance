@@ -14,13 +14,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
 
-	"golang.org/x/net/html"
-
-	"github.com/PuerkitoBio/goquery"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
 	"github.com/google/gopacket/layers"
@@ -70,23 +68,48 @@ func (h *httpStream) run() {
 		} else {
 
 			contentType := resp.Header["Content-Type"]
+			//contentEnc := resp.Header["Content-Encoding"]
+
+			//log.Println("ENCODING:", resp.TransferEncoding, ":", contentEnc, ":", resp.Uncompressed)
+
 			if len(contentType) != 0 {
+
+				reader := resp.Body
+				/*
+					if len(contentEnc) != 0 {
+						if contentEnc[0] == "gzip" {
+							r, qerr := gzip.NewReader(resp.Body)
+							if qerr != nil {
+								log.Println("ERROR GZIP:", qerr)
+							}
+							reader = r
+						}
+					}
+				*/
 
 				switch contentType[0] {
 				// TODO: ASCII, ANSI (Windows-1252)
-				case "text/html; charset=utf-8", "text/html; charset=UTF-8":
+				case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
 					// Default charset for HTML5
-					fmt.Println("FOUND ONE:", contentType)
+					//fmt.Println("FOUND ONE:", contentType)
 
-					body, perr := html.Parse(resp.Body)
-					if perr != nil {
-						log.Println("PARSE ERROR:", perr)
-						break
-					} else {
-						doc := goquery.NewDocumentFromNode(body)
-						fmt.Println("DOC:", doc.Find("h1").Text())
+					log.Print("MATCHED:", contentType[0])
+
+					b, err := ioutil.ReadAll(reader)
+					if err != nil {
+						log.Println(err)
 					}
-
+					fmt.Println(b)
+					/*
+						body, perr := html.Parse(resp.Body)
+						if perr != nil {
+							log.Println("PARSE ERROR:", perr)
+							break
+						} else {
+							doc := goquery.NewDocumentFromNode(body)
+							fmt.Println("DOC:", doc.Find("h1").Text())
+						}
+					*/
 				case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
 					// Default charset before HTML5
 					// TODO: Do something with it, e.g. convert with iconv.
