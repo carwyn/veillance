@@ -60,11 +60,16 @@ func (h *httpStream) run() {
 	buf := bufio.NewReader(&h.r)
 	for {
 		resp, err := http.ReadResponse(buf, nil)
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
+		if err == io.EOF {
 			// We must read until we see an EOF... very important!
 			return
+		} else if err == io.ErrUnexpectedEOF {
+			// TODO: need to establish if we get these in the header.
+			//log.Println("UEOF IN RESP:", h.net, ":",, err)
+			return
 		} else if err != nil {
-			//log.Println("ERROR IN RESPONSE:", h.net, ":", err)
+			log.Println("ERROR IN RESP:", h.net, ":", err)
+			// TODO: What else?
 		} else {
 
 			contentType := resp.Header["Content-Type"]
@@ -91,15 +96,13 @@ func (h *httpStream) run() {
 				// TODO: ASCII, ANSI (Windows-1252)
 				case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
 					// Default charset for HTML5
-					//fmt.Println("FOUND ONE:", contentType)
-
 					log.Print("MATCHED:", contentType[0])
 
 					b, err := ioutil.ReadAll(reader)
 					if err != nil {
 						log.Println(err)
 					}
-					fmt.Println(b)
+					fmt.Println(string(b))
 					/*
 						body, perr := html.Parse(resp.Body)
 						if perr != nil {
@@ -111,10 +114,12 @@ func (h *httpStream) run() {
 						}
 					*/
 				case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
-					// Default charset before HTML5
+					// Default charset for HTML 2 to 4
 					// TODO: Do something with it, e.g. convert with iconv.
+					log.Print("MATCHED:", contentType[0])
+					fallthrough
 				default:
-					//log.Println("UNUSED TYPE:", contentType)
+					//log.Println("UNUSED TYPE:", contentTyp
 				}
 			}
 
@@ -149,6 +154,7 @@ func main() {
 		handle, err = pcap.OpenOffline(*fname)
 	} else {
 		log.Printf("Starting capture on interface %q", *iface)
+		// TODO: Not sure about BlockForever.
 		handle, err = pcap.OpenLive(*iface, int32(*snaplen), true, pcap.BlockForever)
 	}
 	if err != nil {
@@ -168,7 +174,7 @@ func main() {
 	// Read in packets, pass to assembler.
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	packets := packetSource.Packets()
-	ticker := time.Tick(time.Minute)
+	ticker := time.Tick(time.Second * 10)
 	for {
 		select {
 		case packet := <-packets:
@@ -187,8 +193,8 @@ func main() {
 			assembler.AssembleWithTimestamp(packet.NetworkLayer().NetworkFlow(), tcp, packet.Metadata().Timestamp)
 
 		case <-ticker:
-			// Every minute, flush connections that haven't seen activity in the past 2 minutes.
-			assembler.FlushOlderThan(time.Now().Add(time.Minute * -2))
+			// Was: Every minute, flush connections that haven't seen activity in the past 2 minutes.
+			assembler.FlushOlderThan(time.Now().Add(time.Second * -20))
 		}
 	}
 }
