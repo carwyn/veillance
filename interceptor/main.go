@@ -1,11 +1,3 @@
-// Copyright 2012 Google, Inc. All rights reserved.
-//
-// Use of this source code is governed by a BSD-style license
-// that can be found in the LICENSE file in the root of the source
-// tree.
-
-// The pcapdump binary implements a tcpdump-like command line tool with gopacket
-// using pcap as a backend data collection mechanism.
 package main
 
 import (
@@ -29,6 +21,9 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/html"
+
+	"github.com/PuerkitoBio/goquery"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/examples/util"
 	"github.com/google/gopacket/ip4defrag"
@@ -66,6 +61,8 @@ var tstype = flag.String("timestamp_type", "", "Type of timestamps to use")
 var promisc = flag.Bool("promisc", true, "Set promiscuous mode")
 
 var memprofile = flag.String("memprofile", "", "Write memory profile")
+
+var server *Server
 
 var stats struct {
 	ipdefrag        uint
@@ -159,7 +156,8 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 				Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 			}
 			req.Body.Close()
-			Info("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+			//Info("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
+			Info("HTTP/%s Request: %s (body:%d)\n", h.ident, req.Method, s)
 			h.parent.urls = append(h.parent.urls, req.URL.String())
 		} else {
 			res, err := http.ReadResponse(b, nil)
@@ -181,7 +179,58 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 				Error("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
 			}
 			if h.hexdump {
-				Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+				//Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
+
+				contentType := res.Header["Content-Type"]
+				contentEnc := res.Header["Content-Encoding"]
+
+				if len(contentType) != 0 {
+
+					switch contentType[0] {
+					// TODO: ASCII, ANSI (Windows-1252)
+					case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
+						// Default charset for HTML5
+						log.Print("MATCHED:", contentType[0])
+
+						var reader io.Reader
+
+						if len(contentEnc) != 0 {
+							if contentEnc[0] == "gzip" {
+								log.Println("GZIP")
+								r, qerr := gzip.NewReader(bytes.NewReader(body))
+								if qerr != nil {
+									log.Println("ERROR GZIP:", qerr)
+								}
+								reader = r
+							} else {
+								log.Println("NOT GZIP")
+							}
+						} else {
+							reader = bytes.NewReader(body)
+							log.Println("NO ENC")
+						}
+
+						tree, perr := html.Parse(reader)
+						if perr != nil {
+							log.Println("PARSE ERROR:", perr)
+							break
+						} else {
+							//fmt.Println("HTML:\n")
+							//html.Render(os.Stdout, tree)
+							//fmt.Println()
+							doc := goquery.NewDocumentFromNode(tree)
+							fmt.Println("HEADINGS:", doc.Find("h1,h2,h3,h4,h5,h6").Text())
+						}
+
+					case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
+						// Default charset for HTML 2 to 4
+						// TODO: Do something with it, e.g. convert with iconv.
+						log.Print("MATCHED:", contentType[0])
+						fallthrough
+					default:
+						log.Println("UNUSED TYPE:", contentType[0])
+					}
+				}
 			}
 			res.Body.Close()
 			sym := ","
@@ -194,6 +243,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			}
 			encoding := res.Header["Content-Encoding"]
 			Info("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, req, res.ContentLength, sym, s, contentType, encoding)
+			//Info("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 			if (err == nil || *writeincomplete) && *output != "" {
 				base := url.QueryEscape(path.Base(req))
 				if err != nil {
@@ -328,7 +378,7 @@ type tcpStream struct {
 func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TcpFlowDirection, acked reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
 	// FSM
 	if !t.tcpstate.CheckState(tcp, dir) {
-		Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		//Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
 		stats.reject_fsm++
 		if !t.fsmerr {
 			t.fsmerr = true
@@ -341,7 +391,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	// Options
 	err := t.optchecker.Accept(tcp, ci, dir, acked, start)
 	if err != nil {
-		Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		//Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
 		stats.reject_opt++
 		if !*nooptcheck {
 			return false
@@ -460,6 +510,9 @@ func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 
 func main() {
 	defer util.Run()()
+
+	server = startServer()
+
 	var handle *pcap.Handle
 	var err error
 	if *debug {
