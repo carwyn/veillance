@@ -140,8 +140,8 @@ func simulate(server *Server) {
 	for {
 		bi := i % bl
 		di := i % dl
-		f := &Fragment{bi, Source{Name: "SimUser", Type: "User"}, bricksong[bi]}
-		d := &Domain{di, Source{Name: "SimUser", Type: "User"}, domains[di]}
+		f := &Fragment{bi, Source{Name: "User1", Type: "User"}, bricksong[bi]}
+		d := &Domain{di, Source{Name: "User2", Type: "User"}, domains[di]}
 		//jsb, _ := json.Marshal(f)
 		//jsd, _ := json.Marshal(d)
 		server.SendAll(f)
@@ -160,16 +160,20 @@ func simulate(server *Server) {
 	}
 }
 
-func main() {
+func startServer() *Server {
 	log.SetFlags(log.Lshortfile)
 
 	// websocket server
 	server := NewServer("/entry")
 	go server.Listen()
 
-	go simulate(server)
+	//go simulate(server)
 	// static files
 	http.Handle("/", http.FileServer(http.Dir("webroot")))
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	//log.Fatal(http.ListenAndServe(":8080", nil))
+
+	go http.ListenAndServe(":8080", nil)
+
+	return server
 }
