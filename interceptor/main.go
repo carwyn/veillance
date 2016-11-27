@@ -219,7 +219,13 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 							//html.Render(os.Stdout, tree)
 							//fmt.Println()
 							doc := goquery.NewDocumentFromNode(tree)
-							fmt.Println("HEADINGS:", doc.Find("h1,h2,h3,h4,h5,h6").Text())
+							fmt.Println("HEADINGS:")
+							f := func(i int, s *goquery.Selection) {
+								msg := strings.TrimSpace(s.Text())
+								fmt.Println(msg)
+								server.SendAll(msg)
+							}
+							doc.Find("h1,h2,h3,h4,h5,h6").Each(f)
 						}
 
 					case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
