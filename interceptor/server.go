@@ -142,17 +142,10 @@ func simulate(server *Server) {
 		di := i % dl
 		f := &Fragment{bi, Source{Name: "User1", Type: "User"}, bricksong[bi]}
 		d := &Domain{di, Source{Name: "User2", Type: "User"}, domains[di]}
-		//jsb, _ := json.Marshal(f)
-		//jsd, _ := json.Marshal(d)
 		server.SendAll(f)
 		server.SendAll(d)
-		//server.SendAll(&Message{"Bob", string(jsb)})
-		//server.SendAll(&Message{"Bob", string(jsd)})
-
 		if i > bl {
 			s := &Selection{rand.Intn(bl), []int{1, 3}}
-			//jss, _ := json.Marshal(s)
-			//server.SendAll(&Message{"Bob", string(jss)})
 			server.SendAll(s)
 		}
 		i++
