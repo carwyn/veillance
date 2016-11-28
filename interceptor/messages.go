@@ -22,13 +22,17 @@ type Domain struct {
 	Text string
 }
 
+type Action struct {
+	Fid  int
+	Type string
+}
+
 //type Message struct {
 //	Author string `json:"author"`
 //	Body   string `json:"body"`
 //}
 
-type Message interface {
-}
+type Message interface{}
 
 //func (self *Message) String() string {
 //	return self.Author + " says " + self.Body

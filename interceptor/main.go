@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -136,6 +137,8 @@ func Debug(s string, a ...interface{}) {
 	}
 }
 
+var fid int = 0
+
 func (h *httpReader) run(wg *sync.WaitGroup) {
 	defer wg.Done()
 	b := bufio.NewReader(h)
@@ -180,7 +183,6 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			}
 			if h.hexdump {
 				//Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
-
 				contentType := res.Header["Content-Type"]
 				contentEnc := res.Header["Content-Encoding"]
 
@@ -190,51 +192,55 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 					// TODO: ASCII, ANSI (Windows-1252)
 					case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
 						// Default charset for HTML5
-						log.Print("MATCHED:", contentType[0])
-
 						var reader io.Reader
 
 						if len(contentEnc) != 0 {
 							if contentEnc[0] == "gzip" {
-								log.Println("GZIP")
-								r, qerr := gzip.NewReader(bytes.NewReader(body))
-								if qerr != nil {
-									log.Println("ERROR GZIP:", qerr)
+								r, err := gzip.NewReader(bytes.NewReader(body))
+								if err != nil {
+									// TODO: Do something.
+									log.Println("ERROR GZIP:", err)
 								}
 								reader = r
-							} else {
-								log.Println("NOT GZIP")
 							}
 						} else {
 							reader = bytes.NewReader(body)
-							log.Println("NO ENC")
 						}
 
-						tree, perr := html.Parse(reader)
-						if perr != nil {
-							log.Println("PARSE ERROR:", perr)
+						tree, err := html.Parse(reader)
+						if err != nil {
+							log.Println("PARSE ERROR:", err)
 							break
 						} else {
 							//fmt.Println("HTML:\n")
 							//html.Render(os.Stdout, tree)
 							//fmt.Println()
+							// TODO: maybe spin this off into a goroutine so it doesn't block.
 							doc := goquery.NewDocumentFromNode(tree)
 							fmt.Println("HEADINGS:")
 							f := func(i int, s *goquery.Selection) {
 								msg := strings.TrimSpace(s.Text())
-								fmt.Println(msg)
-								server.SendAll(msg)
+								src := h.parent.net.Src()
+								frag := &Fragment{
+									Id:     fid,
+									Source: Source{Name: src.String(), Type: "User"},
+									Text:   msg,
+								}
+								fid++
+								j, err := json.Marshal(frag)
+								if err != nil {
+									log.Println("JSON ERROR:", err)
+								}
+								os.Stdout.Write(append(j, []byte("\n")...))
+								server.SendAll(frag)
 							}
 							doc.Find("h1,h2,h3,h4,h5,h6").Each(f)
 						}
-
 					case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
 						// Default charset for HTML 2 to 4
 						// TODO: Do something with it, e.g. convert with iconv.
-						log.Print("MATCHED:", contentType[0])
 						fallthrough
 					default:
-						log.Println("UNUSED TYPE:", contentType[0])
 					}
 				}
 			}
