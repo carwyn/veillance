@@ -190,7 +190,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 
 					switch contentType[0] {
 					// TODO: ASCII, ANSI (Windows-1252)
-					case "text/html", "text/html; charset=utf-8", "text/html; charset=UTF-8":
+					case "text/html", "text/html; charset=utf-8", "text/html;charset=utf-8", "text/html; charset=UTF-8", "text/html;charset=UTF-8":
 						// Default charset for HTML5
 						var reader io.Reader
 
