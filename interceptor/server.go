@@ -170,9 +170,6 @@ func startServer() *Server {
 	//go simulate(server)
 	// static files
 	http.Handle("/", http.FileServer(http.Dir("webroot")))
-
-	//log.Fatal(http.ListenAndServe(":8080", nil))
-
 	go http.ListenAndServe(":8080", nil)
 
 	return server
