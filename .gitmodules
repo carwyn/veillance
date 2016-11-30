@@ -1,0 +1,4 @@
+[submodule "sentryo"]
+	path = vendor/github.com/google/gopacket
+	url = https://github.com/sentryo/gopacket.git
+	branch = reassembly
