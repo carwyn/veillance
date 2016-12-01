@@ -13,10 +13,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"runtime/pprof"
 	"strings"
 	"sync"
@@ -48,7 +46,6 @@ var quiet = flag.Bool("quiet", false, "Be quiet regarding errors")
 
 // http
 var nohttp = flag.Bool("nohttp", false, "Disable HTTP parsing")
-var output = flag.String("output", "", "Path to create file for HTTP 200 OK responses")
 var writeincomplete = flag.Bool("writeincomplete", false, "Write incomplete response")
 
 var hexdump = flag.Bool("dump", false, "Dump HTTP request/response as hex")
@@ -182,69 +179,10 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 				Error("HTTP-response-body", "HTTP/%s: failed to get body(parsed len:%d): %s\n", h.ident, s, err)
 			}
 			if h.hexdump {
-				//Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
-				contentType := res.Header["Content-Type"]
-				contentEnc := res.Header["Content-Encoding"]
-
-				if len(contentType) != 0 {
-
-					switch contentType[0] {
-					// TODO: ASCII, ANSI (Windows-1252)
-					case "text/html", "text/html; charset=utf-8", "text/html;charset=utf-8", "text/html; charset=UTF-8", "text/html;charset=UTF-8":
-						// Default charset for HTML5
-						var reader io.Reader
-
-						if len(contentEnc) != 0 {
-							if contentEnc[0] == "gzip" {
-								r, err := gzip.NewReader(bytes.NewReader(body))
-								if err != nil {
-									// TODO: Do something.
-									log.Println("ERROR GZIP:", err)
-								}
-								reader = r
-							}
-						} else {
-							reader = bytes.NewReader(body)
-						}
-
-						tree, err := html.Parse(reader)
-						if err != nil {
-							log.Println("PARSE ERROR:", err)
-							break
-						} else {
-							//fmt.Println("HTML:\n")
-							//html.Render(os.Stdout, tree)
-							//fmt.Println()
-							// TODO: maybe spin this off into a goroutine so it doesn't block.
-							doc := goquery.NewDocumentFromNode(tree)
-							fmt.Println("HEADINGS:")
-							f := func(i int, s *goquery.Selection) {
-								msg := strings.TrimSpace(s.Text())
-								src := h.parent.net.Src()
-								frag := &Fragment{
-									Id:     fid,
-									Source: Source{Name: src.String(), Type: "User"},
-									Text:   msg,
-								}
-								fid++
-								j, err := json.Marshal(frag)
-								if err != nil {
-									log.Println("JSON ERROR:", err)
-								}
-								os.Stdout.Write(append(j, []byte("\n")...))
-								server.SendAll(frag)
-							}
-							doc.Find("h1,h2,h3,h4,h5,h6").Each(f)
-						}
-					case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
-						// Default charset for HTML 2 to 4
-						// TODO: Do something with it, e.g. convert with iconv.
-						fallthrough
-					default:
-					}
-				}
+				Info("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 			}
 			res.Body.Close()
+
 			sym := ","
 			if res.ContentLength > 0 && res.ContentLength != int64(s) {
 				sym = "!="
@@ -256,54 +194,63 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			encoding := res.Header["Content-Encoding"]
 			Info("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, req, res.ContentLength, sym, s, contentType, encoding)
 			//Info("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
-			if (err == nil || *writeincomplete) && *output != "" {
-				base := url.QueryEscape(path.Base(req))
-				if err != nil {
-					base = "incomplete-" + base
-				}
-				base = path.Join(*output, base)
-				if len(base) > 250 {
-					base = base[:250] + "..."
-				}
-				if base == *output {
-					base = path.Join(*output, "noname")
-				}
-				target := base
-				n := 0
-				for true {
-					_, err := os.Stat(target)
-					//if os.IsNotExist(err) != nil {
-					if err != nil {
-						break
+
+			if err == nil || *writeincomplete {
+				// START Addded
+				if len(contentType) > 0 {
+
+					switch contentType[0] {
+					// TODO: ASCII, ANSI (Windows-1252)
+					case "text/html", "text/html; charset=utf-8", "text/html;charset=utf-8", "text/html; charset=UTF-8", "text/html;charset=UTF-8":
+						// Default charset for HTML5
+						var reader io.Reader
+						//reader = bytes.NewBuffer(body)
+						reader = bytes.NewReader(body)
+						if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
+							reader, err = gzip.NewReader(reader)
+							if err != nil {
+								Error("HTTP-gunzip", "Failed to gzip decode: %s", err)
+							}
+						}
+
+						tree, err := html.Parse(reader)
+						if err != nil {
+							Error("HTML-Parse", "Failed to parse %s body: %s", contentType[0], err)
+						} else {
+							//fmt.Println("HTML:\n")
+							//html.Render(os.Stdout, tree)
+							//fmt.Println()
+							// TODO: maybe spin this off into a goroutine so it doesn't block.
+							doc := goquery.NewDocumentFromNode(tree)
+							f := func(i int, s *goquery.Selection) {
+								msg := strings.TrimSpace(s.Text())
+								src := h.parent.net.Src()
+								frag := &Fragment{
+									Id:     fid,
+									Source: Source{Name: src.String(), Type: "User"},
+									Text:   msg,
+								}
+								fid++
+								j, err := json.Marshal(frag)
+								if err != nil {
+									Error("JSON-Marshal", "Error marshalling fragment: %s", err)
+								}
+								os.Stdout.Write(append(j, []byte("\n")...))
+								server.SendAll(frag)
+							}
+							doc.Find("h1,h2,h3,h4,h5,h6").Each(f)
+						}
+						if _, ok := reader.(*gzip.Reader); ok {
+							reader.(*gzip.Reader).Close()
+						}
+					case "text/html; charset=iso-8859-1", "text/html; charset=ISO-8859-1":
+						// Default charset for HTML 2 to 4
+						// TODO: Do something with it, e.g. convert with iconv.
+						fallthrough
+					default:
 					}
-					target = fmt.Sprintf("%s-%d", base, n)
-					n++
 				}
-				f, err := os.Create(target)
-				if err != nil {
-					Error("HTTP-create", "Cannot create %s: %s\n", target, err)
-					continue
-				}
-				var r io.Reader
-				r = bytes.NewBuffer(body)
-				if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
-					r, err = gzip.NewReader(r)
-					if err != nil {
-						Error("HTTP-gunzip", "Failed to gzip decode: %s", err)
-					}
-				}
-				if err == nil {
-					w, err := io.Copy(f, r)
-					if _, ok := r.(*gzip.Reader); ok {
-						r.(*gzip.Reader).Close()
-					}
-					f.Close()
-					if err != nil {
-						Error("HTTP-save", "%s: failed to save %s (l:%d): %s\n", h.ident, target, w, err)
-					} else {
-						Info("%s: Saved %s (l:%d)\n", h.ident, target, w)
-					}
-				}
+				// END Added
 			}
 		}
 	}
