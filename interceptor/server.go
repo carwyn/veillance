@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
@@ -119,8 +118,8 @@ func (s *Server) Listen() {
 
 			// broadcast message for all clients
 		case msg := <-s.sendAllCh:
-			js, _ := json.Marshal(msg)
-			log.Println("Send all:", string(js))
+			//js, _ := json.Marshal(msg)
+			//log.Println("Send all:", string(js))
 			s.messages = append(s.messages, msg)
 			s.sendAll(msg)
 
