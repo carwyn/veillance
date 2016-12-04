@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"runtime/pprof"
 	"strings"
 	"sync"
@@ -195,7 +196,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			Info("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, req, res.ContentLength, sym, s, contentType, encoding)
 			//Info("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
-			if err == nil || *writeincomplete {
+			if res.StatusCode == 200 && (err == nil || *writeincomplete) {
 				// START Addded
 				if len(contentType) > 0 {
 
@@ -217,13 +218,18 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 						if err != nil {
 							Error("HTML-Parse", "Failed to parse %s body: %s", contentType[0], err)
 						} else {
-							//fmt.Println("HTML:\n")
-							//html.Render(os.Stdout, tree)
-							//fmt.Println()
 							// TODO: maybe spin this off into a goroutine so it doesn't block.
 							doc := goquery.NewDocumentFromNode(tree)
-							f := func(i int, s *goquery.Selection) {
-								msg := strings.TrimSpace(s.Text())
+
+							f := func(i int, s *goquery.Selection) string {
+								trim := strings.TrimSpace(s.Text())
+								rex := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+								return rex.ReplaceAllString(trim, " ")
+							}
+							texts := doc.Find("header,h1,h2,h3,h4,h5,h6").Map(f)
+							msg := strings.Join(texts, " ")
+
+							if msg != "" {
 								src := h.parent.net.Src()
 								frag := &Fragment{
 									Id:     fid,
@@ -238,7 +244,6 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 								os.Stdout.Write(append(j, []byte("\n")...))
 								server.SendAll(frag)
 							}
-							doc.Find("h1,h2,h3,h4,h5,h6").Each(f)
 						}
 						if _, ok := reader.(*gzip.Reader); ok {
 							reader.(*gzip.Reader).Close()
