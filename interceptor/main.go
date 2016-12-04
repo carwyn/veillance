@@ -226,7 +226,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 								rex := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
 								return rex.ReplaceAllString(trim, " ")
 							}
-							texts := doc.Find("header,h1,h2,h3,h4,h5,h6").Map(f)
+							texts := doc.Find("h1,h2,h3,h4,h5,h6").Map(f)
 							msg := strings.Join(texts, " ")
 
 							if msg != "" {
