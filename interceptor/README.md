@@ -25,6 +25,7 @@ On OS X I'm not sure where this is but should be installed if XCode is.
 * Test the interceptor via the test web page:
   * `curl http://localhost:8080/test.html`
   * This will print a live stream to the Javascript console.
+* To stop the interceptor use the key combination `Ctrl+\`
 
 
 ## Connecting to the Websocket Server Programatically
@@ -78,4 +79,3 @@ id: 208
 event: domain
 data: {"Id":12,"Name":"SimUser","Type":"User","Text":"twitter.com"}
 ```
-
