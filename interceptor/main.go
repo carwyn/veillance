@@ -64,21 +64,21 @@ var memprofile = flag.String("memprofile", "", "Write memory profile")
 var server *Server
 
 var stats struct {
-	ipdefrag        uint
-	missed_bytes    uint
-	pkt             uint
-	sz              uint
-	totalsz         uint
-	reject_fsm      uint
-	reject_opt      uint
-	reject_conn_fsm uint
-	reassembled     uint
-	out_of_order_b  uint
-	out_of_order_p  uint
-	biggest_chunk_b uint
-	biggest_chunk_p uint
-	overlap_b       uint
-	overlap_p       uint
+	ipdefrag            int
+	missedBytes         int
+	pkt                 int
+	sz                  int
+	totalsz             int
+	rejectFsm           int
+	rejectOpt           int
+	rejectConnFsm       int
+	reassembled         int
+	outOfOrderBytes     int
+	outOfOrderPackets   int
+	biggestChunkBytes   int
+	biggestChunkPackets int
+	overlapBytes        int
+	overlapPackets      int
 }
 
 const closeTimeout time.Duration = time.Hour * 24 // Closing inactive: TODO: from CLI
@@ -113,11 +113,11 @@ func (h *httpReader) Read(p []byte) (int, error) {
 
 var outputLevel int
 var errorsMap map[string]uint
-var errorsNb uint
+var errors uint
 
 // Too bad for perf that a... is evaluated
 func Error(t string, s string, a ...interface{}) {
-	errorsNb++
+	errors++
 	nb, _ := errorsMap[t]
 	errorsMap[t] = nb + 1
 	if outputLevel >= 0 {
@@ -158,7 +158,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			}
 			req.Body.Close()
 			//Info("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, req.URL, s)
-			Info("HTTP/%s Request: %s (body:%d)\n", h.ident, req.Method, s)
+			Info("HTTP/%s Request: %s %s (body:%d)\n", h.ident, req.Method, s)
 			h.parent.urls = append(h.parent.urls, req.URL.String())
 		} else {
 			res, err := http.ReadResponse(b, nil)
@@ -271,7 +271,7 @@ type tcpStreamFactory struct {
 
 func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.TCP, ac reassembly.AssemblerContext) reassembly.Stream {
 	Debug("* NEW: %s %s\n", net, transport)
-	fsmOptions := reassembly.TcpSimpleFSMOptions{
+	fsmOptions := reassembly.TCPSimpleFSMOptions{
 		SupportMissingEstablishment: *allowmissinginit,
 	}
 	stream := &tcpStream{
@@ -280,9 +280,9 @@ func (factory *tcpStreamFactory) New(net, transport gopacket.Flow, tcp *layers.T
 		isDNS:      tcp.SrcPort == 53 || tcp.DstPort == 53,
 		isHTTP:     (tcp.SrcPort == 80 || tcp.DstPort == 80) && factory.doHTTP,
 		reversed:   tcp.SrcPort == 80,
-		tcpstate:   reassembly.NewTcpSimpleFSM(fsmOptions),
+		tcpstate:   reassembly.NewTCPSimpleFSM(fsmOptions),
 		ident:      fmt.Sprintf("%s:%s", net, transport),
-		optchecker: reassembly.NewTcpOptionCheck(),
+		optchecker: reassembly.NewTCPOptionCheck(),
 	}
 	if stream.isHTTP {
 		stream.client = httpReader{
@@ -326,9 +326,9 @@ func (c *Context) GetCaptureInfo() gopacket.CaptureInfo {
 
 /* It's a connection (bidirectional) */
 type tcpStream struct {
-	tcpstate       *reassembly.TcpSimpleFSM
+	tcpstate       *reassembly.TCPSimpleFSM
 	fsmerr         bool
-	optchecker     reassembly.TcpOptionCheck
+	optchecker     reassembly.TCPOptionCheck
 	net, transport gopacket.Flow
 	isDNS          bool
 	isHTTP         bool
@@ -339,14 +339,14 @@ type tcpStream struct {
 	ident          string
 }
 
-func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TcpFlowDirection, acked reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
+func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, acked reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
 	// FSM
 	if !t.tcpstate.CheckState(tcp, dir) {
-		//Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
-		stats.reject_fsm++
+		Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
+		stats.rejectFsm++
 		if !t.fsmerr {
 			t.fsmerr = true
-			stats.reject_conn_fsm++
+			stats.rejectConnFsm++
 		}
 		if !*ignorefsmerr {
 			return false
@@ -355,8 +355,8 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 	// Options
 	err := t.optchecker.Accept(tcp, ci, dir, acked, start)
 	if err != nil {
-		//Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
-		stats.reject_opt++
+		Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
+		stats.rejectOpt++
 		if !*nooptcheck {
 			return false
 		}
@@ -374,7 +374,7 @@ func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassem
 		}
 	}
 	if !accept {
-		stats.reject_opt++
+		stats.rejectOpt++
 	}
 	return accept
 }
@@ -385,35 +385,35 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 	// update stats
 	sgStats := sg.Stats()
 	if skip > 0 {
-		stats.missed_bytes += uint(skip)
+		stats.missedBytes += skip
 	}
-	stats.sz += uint(length - saved)
-	stats.pkt += sgStats.NbPackets
-	if sgStats.NbChunks > 1 {
+	stats.sz += length - saved
+	stats.pkt += sgStats.Packets
+	if sgStats.Chunks > 1 {
 		stats.reassembled++
 	}
-	stats.out_of_order_p += sgStats.NbQueuedPackets
-	stats.out_of_order_b += sgStats.NbQueuedBytes
-	if uint(length) > stats.biggest_chunk_b {
-		stats.biggest_chunk_b = uint(length)
+	stats.outOfOrderPackets += sgStats.QueuedPackets
+	stats.outOfOrderBytes += sgStats.QueuedBytes
+	if length > stats.biggestChunkBytes {
+		stats.biggestChunkBytes = length
 	}
-	if sgStats.NbPackets > stats.biggest_chunk_p {
-		stats.biggest_chunk_p = sgStats.NbPackets
+	if sgStats.Packets > stats.biggestChunkPackets {
+		stats.biggestChunkPackets = sgStats.Packets
 	}
-	if sgStats.NbOverlapBytes != 0 && sgStats.NbOverlapPackets == 0 {
-		fmt.Printf("bytes:%d, pkts:%d\n", sgStats.NbOverlapBytes, sgStats.NbOverlapPackets)
+	if sgStats.OverlapBytes != 0 && sgStats.OverlapPackets == 0 {
+		fmt.Printf("bytes:%d, pkts:%d\n", sgStats.OverlapBytes, sgStats.OverlapPackets)
 		panic("Invalid overlap")
 	}
-	stats.overlap_b += sgStats.NbOverlapBytes
-	stats.overlap_p += sgStats.NbOverlapPackets
+	stats.overlapBytes += sgStats.OverlapBytes
+	stats.overlapPackets += sgStats.OverlapPackets
 
 	var ident string
-	if dir == reassembly.TcpDirClientToServer {
+	if dir == reassembly.TCPDirClientToServer {
 		ident = fmt.Sprintf("%v %v(%s): ", t.net, t.transport, dir)
 	} else {
 		ident = fmt.Sprintf("%v %v(%s): ", t.net.Reverse(), t.transport.Reverse(), dir)
 	}
-	Debug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.NbPackets, sgStats.NbChunks, sgStats.NbOverlapBytes, sgStats.NbOverlapPackets)
+	Debug("%s: SG reassembled packet with %d bytes (start:%v,end:%v,skip:%d,saved:%d,nb:%d,%d,overlap:%d,%d)\n", ident, length, start, end, skip, saved, sgStats.Packets, sgStats.Chunks, sgStats.OverlapBytes, sgStats.OverlapPackets)
 	if skip == -1 && *allowmissinginit {
 		// this is allowed
 	} else if skip != 0 {
@@ -453,7 +453,7 @@ func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.Ass
 			if *hexdump {
 				Debug("Feeding http with:\n%s", hex.Dump(data))
 			}
-			if dir == reassembly.TcpDirClientToServer && !t.reversed {
+			if dir == reassembly.TCPDirClientToServer && !t.reversed {
 				t.client.bytes <- data
 			} else {
 				t.server.bytes <- data
@@ -600,18 +600,18 @@ func main() {
 			c := Context{
 				CaptureInfo: packet.Metadata().CaptureInfo,
 			}
-			stats.totalsz += uint(len(tcp.Payload))
+			stats.totalsz += len(tcp.Payload)
 			assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
 		}
 		if count%*statsevery == 0 {
 			ref := packet.Metadata().CaptureInfo.Timestamp
-			flushed, closed := assembler.FlushCloseOlderThan(ref.Add(-timeout), ref.Add(-closeTimeout))
+			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
 			Debug("Forced flush: %d flushed, %d closed (%s)", flushed, closed, ref)
 		}
 
 		done := *maxcount > 0 && count >= *maxcount
 		if count%*statsevery == 0 || done {
-			fmt.Fprintf(os.Stderr, "Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, bytes, time.Since(start), errorsNb, len(errorsMap))
+			fmt.Fprintf(os.Stderr, "Processed %v packets (%v bytes) in %v (errors: %v, type:%v)\n", count, bytes, time.Since(start), errors, len(errorsMap))
 		}
 		select {
 		case <-signalChan:
@@ -646,21 +646,21 @@ func main() {
 		fmt.Printf("IPdefrag:\t\t%d\n", stats.ipdefrag)
 	}
 	fmt.Printf("TCP stats:\n")
-	fmt.Printf(" missed bytes:\t\t%d\n", stats.missed_bytes)
+	fmt.Printf(" missed bytes:\t\t%d\n", stats.missedBytes)
 	fmt.Printf(" total packets:\t\t%d\n", stats.pkt)
-	fmt.Printf(" rejected FSM:\t\t%d\n", stats.reject_fsm)
-	fmt.Printf(" rejected Options:\t%d\n", stats.reject_opt)
+	fmt.Printf(" rejected FSM:\t\t%d\n", stats.rejectFsm)
+	fmt.Printf(" rejected Options:\t%d\n", stats.rejectOpt)
 	fmt.Printf(" reassembled bytes:\t%d\n", stats.sz)
 	fmt.Printf(" total TCP bytes:\t%d\n", stats.totalsz)
-	fmt.Printf(" conn rejected FSM:\t%d\n", stats.reject_conn_fsm)
+	fmt.Printf(" conn rejected FSM:\t%d\n", stats.rejectConnFsm)
 	fmt.Printf(" reassembled chunks:\t%d\n", stats.reassembled)
-	fmt.Printf(" out-of-order packets:\t%d\n", stats.out_of_order_p)
-	fmt.Printf(" out-of-order bytes:\t%d\n", stats.out_of_order_b)
-	fmt.Printf(" biggest-chunk packets:\t%d\n", stats.biggest_chunk_p)
-	fmt.Printf(" biggest-chunk bytes:\t%d\n", stats.biggest_chunk_b)
-	fmt.Printf(" overlap packets:\t%d\n", stats.overlap_p)
-	fmt.Printf(" overlap bytes:\t\t%d\n", stats.overlap_b)
-	fmt.Printf("Errors: %d\n", errorsNb)
+	fmt.Printf(" out-of-order packets:\t%d\n", stats.outOfOrderPackets)
+	fmt.Printf(" out-of-order bytes:\t%d\n", stats.outOfOrderBytes)
+	fmt.Printf(" biggest-chunk packets:\t%d\n", stats.biggestChunkPackets)
+	fmt.Printf(" biggest-chunk bytes:\t%d\n", stats.biggestChunkBytes)
+	fmt.Printf(" overlap packets:\t%d\n", stats.overlapPackets)
+	fmt.Printf(" overlap bytes:\t\t%d\n", stats.overlapBytes)
+	fmt.Printf("Errors: %d\n", errors)
 	for e, _ := range errorsMap {
 		fmt.Printf(" %s:\t\t%d\n", e, errorsMap[e])
 	}
