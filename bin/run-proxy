@@ -1,4 +1,5 @@
 #!/bin/bash
 
-mitmdump -T --host -q -s collectors/proxy/intercept.py
+#mitmdump -T --host -q -s collectors/proxy/intercept.py
+mitmdump -q -s collectors/proxy/intercept.py
 

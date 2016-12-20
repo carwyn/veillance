@@ -2,7 +2,7 @@ from bs4 import BeautifulSoup, SoupStrainer
 import cStringIO
 #from PIL import Image
 from libmproxy.script import concurrent
-from libmproxy.protocol.http import decoded
+from libmproxy.models import decoded
 from pymongo import MongoClient
 from urlparse import urlparse
 
@@ -35,21 +35,21 @@ def response(context, flow):
     # is content associated, but not present. CONTENT_MISSING evaluates
     # to False to make checking for the presence of content natural.
 
-    if flow.response.code != 200:
+    if flow.response.status_code != 200:
         return
  
-    cont_type = flow.response.headers.get_first("content-type", "")
-   
+    cont_type = flow.response.headers.get("content-type", "")
+
     if cont_type.startswith("text/html"):
 
         if flow.response.content:
-            print "CAPTURED"
+            print("CAPTURED")
             content = flow.response.get_decoded_content()
             soup = BeautifulSoup(content, "lxml", parse_only=strainer)
 
             cleaned = soup.get_text(' ', strip=True)
             if cleaned:
-                print cleaned
+                print(cleaned)
                 client.meteor.fragments.insert({'text': cleaned})
 
     elif cont_type.startswith("image"):
