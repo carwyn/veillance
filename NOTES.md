@@ -1,4 +1,14 @@
 
+http://dnstap.info/
+
+# see probe/endpoint    
+https://github.com/weaveworks/scope
+
+https://github.com/Phillipmartin/gopassivedns
+
+https://blog.cloudflare.com/dns-parser-meet-go-fuzzer/
+
+https://github.com/bisrael8191/sniffer
 http://www.bisrael8191.com/Go-Packet-Sniffer/
 
 https://yiu.co.uk/blog/who-can-view-my-internet-history/
