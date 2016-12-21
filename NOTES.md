@@ -1,7 +1,7 @@
 
 http://dnstap.info/
 
-# see probe/endpoint    
+See probe/endpoint    
 https://github.com/weaveworks/scope
 
 https://github.com/Phillipmartin/gopassivedns
@@ -12,6 +12,14 @@ https://github.com/bisrael8191/sniffer
 http://www.bisrael8191.com/Go-Packet-Sniffer/
 
 https://yiu.co.uk/blog/who-can-view-my-internet-history/
+
+https://community.jisc.ac.uk/blogs/regulatory-developments/article/passive-dns-improving-security-and-privacy
+
+https://www.bro.org/
+
+https://www.elastic.co/products/beats/packetbeat
+
+http://www.devdungeon.com/content/packet-capture-injection-and-analysis-gopacket
 
 https://github.com/PuerkitoBio/goquery
 https://github.com/ericchiang/pup
