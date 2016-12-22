@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
-	"runtime/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -38,8 +37,6 @@ var statsevery = flag.Int("stats", 1000, "Output statistics every N packets")
 var lazy = flag.Bool("lazy", false, "If true, do lazy decoding")
 var nodefrag = flag.Bool("nodefrag", false, "If true, do not do IPv4 defrag")
 var checksum = flag.Bool("checksum", false, "Check TCP checksum")
-var nooptcheck = flag.Bool("nooptcheck", false, "Do not check TCP options (useful to ignore MSS on captures with TSO)")
-var ignorefsmerr = flag.Bool("ignorefsmerr", false, "Ignore TCP FSM errors")
 var allowmissinginit = flag.Bool("allowmissinginit", false, "Support streams without SYN/SYN+ACK/ACK sequence")
 var verbose = flag.Bool("verbose", false, "Be verbose")
 var debug = flag.Bool("debug", false, "Display debug information")
@@ -59,8 +56,6 @@ var snaplen = flag.Int("s", 65536, "Snap length (number of bytes max to read per
 var tstype = flag.String("timestamp_type", "", "Type of timestamps to use")
 var promisc = flag.Bool("promisc", true, "Set promiscuous mode")
 
-var memprofile = flag.String("memprofile", "", "Write memory profile")
-
 var server *Server
 
 var stats struct {
@@ -69,9 +64,6 @@ var stats struct {
 	pkt                 int
 	sz                  int
 	totalsz             int
-	rejectFsm           int
-	rejectOpt           int
-	rejectConnFsm       int
 	reassembled         int
 	outOfOrderBytes     int
 	outOfOrderPackets   int
@@ -339,44 +331,11 @@ type tcpStream struct {
 	ident          string
 }
 
-func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo, dir reassembly.TCPFlowDirection, acked reassembly.Sequence, start *bool, ac reassembly.AssemblerContext) bool {
-	// FSM
-	if !t.tcpstate.CheckState(tcp, dir) {
-		Error("FSM", "%s: Packet rejected by FSM (state:%s)\n", t.ident, t.tcpstate.String())
-		stats.rejectFsm++
-		if !t.fsmerr {
-			t.fsmerr = true
-			stats.rejectConnFsm++
-		}
-		if !*ignorefsmerr {
-			return false
-		}
-	}
-	// Options
-	err := t.optchecker.Accept(tcp, ci, dir, acked, start)
-	if err != nil {
-		Error("OptionChecker", "%s: Packet rejected by OptionChecker: %s\n", t.ident, err)
-		stats.rejectOpt++
-		if !*nooptcheck {
-			return false
-		}
-	}
-	// Checksum
-	accept := true
-	if *checksum {
-		c, err := tcp.ComputeChecksum()
-		if err != nil {
-			Error("ChecksumCompute", "%s: Got error computing checksum: %s\n", t.ident, err)
-			accept = false
-		} else if c != 0x0 {
-			Error("Checksum", "%s: Invalid checksum: 0x%x\n", t.ident, c)
-			accept = false
-		}
-	}
-	if !accept {
-		stats.rejectOpt++
-	}
-	return accept
+func (t *tcpStream) Accept(tcp *layers.TCP, ci gopacket.CaptureInfo,
+	dir reassembly.TCPFlowDirection, acked reassembly.Sequence,
+	start *bool, ac reassembly.AssemblerContext) bool {
+	// Accept everything.
+	return true
 }
 
 func (t *tcpStream) ReassembledSG(sg reassembly.ScatterGather, ac reassembly.AssemblerContext) {
@@ -591,12 +550,6 @@ func main() {
 		tcp := packet.Layer(layers.LayerTypeTCP)
 		if tcp != nil {
 			tcp := tcp.(*layers.TCP)
-			if *checksum {
-				err := tcp.SetNetworkLayerForChecksum(packet.NetworkLayer())
-				if err != nil {
-					log.Fatalf("Failed to set network layer for checksum: %s\n", err)
-				}
-			}
 			c := Context{
 				CaptureInfo: packet.Metadata().CaptureInfo,
 			}
@@ -631,35 +584,12 @@ func main() {
 		streamPool.Dump()
 	}
 
-	if *memprofile != "" {
-		f, err := os.Create(*memprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.WriteHeapProfile(f)
-		f.Close()
-	}
-
 	streamFactory.WaitGoRoutines()
 	Debug("%s\n", assembler.Dump())
 	if !*nodefrag {
 		fmt.Printf("IPdefrag:\t\t%d\n", stats.ipdefrag)
 	}
-	fmt.Printf("TCP stats:\n")
-	fmt.Printf(" missed bytes:\t\t%d\n", stats.missedBytes)
-	fmt.Printf(" total packets:\t\t%d\n", stats.pkt)
-	fmt.Printf(" rejected FSM:\t\t%d\n", stats.rejectFsm)
-	fmt.Printf(" rejected Options:\t%d\n", stats.rejectOpt)
-	fmt.Printf(" reassembled bytes:\t%d\n", stats.sz)
-	fmt.Printf(" total TCP bytes:\t%d\n", stats.totalsz)
-	fmt.Printf(" conn rejected FSM:\t%d\n", stats.rejectConnFsm)
-	fmt.Printf(" reassembled chunks:\t%d\n", stats.reassembled)
-	fmt.Printf(" out-of-order packets:\t%d\n", stats.outOfOrderPackets)
-	fmt.Printf(" out-of-order bytes:\t%d\n", stats.outOfOrderBytes)
-	fmt.Printf(" biggest-chunk packets:\t%d\n", stats.biggestChunkPackets)
-	fmt.Printf(" biggest-chunk bytes:\t%d\n", stats.biggestChunkBytes)
-	fmt.Printf(" overlap packets:\t%d\n", stats.overlapPackets)
-	fmt.Printf(" overlap bytes:\t\t%d\n", stats.overlapBytes)
+	fmt.Printf("Total packets:\t\t%d\n", stats.pkt)
 	fmt.Printf("Errors: %d\n", errors)
 	for e, _ := range errorsMap {
 		fmt.Printf(" %s:\t\t%d\n", e, errorsMap[e])
