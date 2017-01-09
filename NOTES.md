@@ -1,4 +1,9 @@
 
+
+
+General notes on gopackage usage:
+http://www.devdungeon.com/content/packet-capture-injection-and-analysis-gopacket
+
 http://dnstap.info/
 
 See probe/endpoint    
@@ -18,8 +23,6 @@ https://community.jisc.ac.uk/blogs/regulatory-developments/article/passive-dns-i
 https://www.bro.org/
 
 https://www.elastic.co/products/beats/packetbeat
-
-http://www.devdungeon.com/content/packet-capture-injection-and-analysis-gopacket
 
 https://github.com/PuerkitoBio/goquery
 https://github.com/ericchiang/pup
