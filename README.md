@@ -20,10 +20,10 @@ On OS X I'm not sure where this is but should be installed if XCode is.
 * Build by running the following in the veillance/interceptor directory:
   * `go build`
 * Run the interceptor from the veillance/interceptor directory:
-  * `sudo ./interceptor -i eth0 -nooptcheck -ignorefsmerr "tcp port 80"`
+  * `sudo ./interceptor -i eth0 "tcp port 80"`
   * NOTE: Change the network interface passed to `-i` to match your system.
 * Test the interceptor via the test web page:
-  * `curl http://localhost:8080/test.html`
+  * http://localhost:8080/test.html
   * This will print a live stream to the Javascript console.
 * To stop the interceptor use the key combination `Ctrl+\`
 
@@ -39,7 +39,7 @@ On OS X I'm not sure where this is but should be installed if XCode is.
 
 > WARNING: This element will evolve over time!
 
-Fragment JSON: `{"Id":123,"Name":"Bob","Type":"User","Text":"Hello World!"}`
+Fragment JSON: `{"Id":123,"Name":"Bob","Type":"HTTP","Text":"Hello World!"}`
 
 ```
 Id: Fragment ID of se
@@ -55,7 +55,7 @@ Fid: Fragment ID.
 Words: Selected words.
 ```
 
-Domain JSON: `{"Id":321,"Name":"Bill","Type":"User","Text":"twitter.com"}`
+Domain JSON: `{"Id":321,"Name":"Bill","Type":"DNS","Text":"twitter.com"}`
 
 ```
 Id: Seen domain identifier.
@@ -69,7 +69,7 @@ Text: The captured text.
 ```
 id: 207
 event: fragment
-data: {"Id":16,"Name":"SimUser","Type":"User","Text":"Well the barrel broke my shoulder as on to the ground it sped"}
+data: {"Id":16,"Name":"SimUser","Type":"HTTP","Text":"Well the barrel broke my shoulder as on to the ground it sped"}
 
 id: 206
 event: selection
@@ -77,5 +77,5 @@ data: {"Fid":31,"Words":[1,3]}
 
 id: 208
 event: domain
-data: {"Id":12,"Name":"SimUser","Type":"User","Text":"twitter.com"}
+data: {"Id":12,"Name":"SimUser","Type":"DNS","Text":"twitter.com"}
 ```

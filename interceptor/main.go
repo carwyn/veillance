@@ -225,7 +225,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 								src := h.parent.net.Src()
 								frag := &Fragment{
 									Id:     fid,
-									Source: Source{Name: src.String(), Type: "User"},
+									Source: Source{Name: src.String(), Type: "HTTP"},
 									Text:   msg,
 								}
 								fid++
@@ -431,6 +431,52 @@ func (t *tcpStream) ReassemblyComplete(ac reassembly.AssemblerContext) bool {
 	return false
 }
 
+var did int
+
+/*
+ *
+ */
+func handleUDP(flow gopacket.Flow, udp *layers.UDP) {
+
+	dns := &layers.DNS{}
+	var decoded []gopacket.LayerType
+
+	// TODO: Check data length?
+
+	p := gopacket.NewDecodingLayerParser(layers.LayerTypeDNS, dns)
+	err := p.DecodeLayers(udp.LayerPayload(), &decoded)
+	if err != nil {
+		Error("DNS-parser", "Failed to decode DNS: %v\n", err)
+	} else {
+		Debug("DNS: %s\n", gopacket.LayerDump(dns))
+
+		if !dns.QR && dns.OpCode == layers.DNSOpCodeQuery {
+			question := dns.Questions[0]
+			if question.Type != layers.DNSTypeA || question.Class != layers.DNSClassIN {
+				return
+			}
+
+			msg := string(question.Name)
+			if msg != "" {
+				src := flow.Src()
+				lookup := &Domain{
+					Id:     did,
+					Source: Source{Name: src.String(), Type: "DNS"},
+					Text:   msg,
+				}
+				did++
+				j, err := json.Marshal(lookup)
+				if err != nil {
+					Error("JSON-Marshal", "Error marshalling DNS lookup: %s", err)
+				}
+				os.Stdout.Write(append(j, []byte("\n")...))
+				server.SendAll(lookup)
+			}
+		}
+	}
+
+}
+
 func main() {
 	defer util.Run()()
 
@@ -556,6 +602,14 @@ func main() {
 			stats.totalsz += len(tcp.Payload)
 			assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &c)
 		}
+
+		udp := packet.Layer(layers.LayerTypeUDP)
+		if udp != nil {
+			udp := udp.(*layers.UDP)
+			stats.totalsz += len(udp.Payload)
+			handleUDP(packet.NetworkLayer().NetworkFlow(), udp)
+		}
+
 		if count%*statsevery == 0 {
 			ref := packet.Metadata().CaptureInfo.Timestamp
 			flushed, closed := assembler.FlushWithOptions(reassembly.FlushOptions{T: ref.Add(-timeout), TC: ref.Add(-closeTimeout)})
