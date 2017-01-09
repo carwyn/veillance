@@ -20,7 +20,7 @@ On OS X I'm not sure where this is but should be installed if XCode is.
 * Build by running the following in the veillance/interceptor directory:
   * `go build`
 * Run the interceptor from the veillance/interceptor directory:
-  * `sudo ./interceptor -i eth0 "tcp port 80"`
+  * `sudo ./interceptor -i eth0 "port 80 or port 53"`
   * NOTE: Change the network interface passed to `-i` to match your system.
 * Test the interceptor via the test web page:
   * http://localhost:8080/test.html
