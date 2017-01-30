@@ -1,5 +1,6 @@
 
-
+http://mylg.io/
+https://github.com/domainr/whois
 
 General notes on gopackage usage:
 http://www.devdungeon.com/content/packet-capture-injection-and-analysis-gopacket
