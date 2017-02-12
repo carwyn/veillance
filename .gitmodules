@@ -2,3 +2,6 @@
 	path = vendor/github.com/google/gopacket
 	url = https://github.com/google/gopacket.git
 	branch = master
+[submodule "goquery"]
+	path = vendor/github.com/PuerkitoBio/goquery
+	url = https://github.com/PuerkitoBio/goquery.git
