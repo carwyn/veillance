@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -120,7 +121,7 @@ func (s *Server) Listen() {
 		case msg := <-s.sendAllCh:
 			//js, _ := json.Marshal(msg)
 			//log.Println("Send all:", string(js))
-			s.messages = append(s.messages, msg)
+			//s.messages = append(s.messages, msg)
 			s.sendAll(msg)
 
 		case err := <-s.errCh:
@@ -152,6 +153,19 @@ func simulate(server *Server) {
 	}
 }
 
+func gobot() {
+
+	for {
+		resp, err := http.Get("http://news.bbc.co.uk")
+		if err != nil {
+			// handle error
+		}
+		defer resp.Body.Close()
+		ioutil.ReadAll(resp.Body)
+		time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
+	}
+}
+
 func startServer() *Server {
 	log.SetFlags(log.Lshortfile)
 
@@ -160,6 +174,9 @@ func startServer() *Server {
 	go server.Listen()
 
 	//go simulate(server)
+
+	go gobot()
+
 	// static files
 	http.Handle("/", http.FileServer(http.Dir("webroot")))
 	go http.ListenAndServe(":8080", nil)
