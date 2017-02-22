@@ -12,3 +12,6 @@ nmcli c up veillance
 
 * https://vincent.bernat.im/en/blog/2014-intel-7260-access-point
 * https://www.hogarthuk.com/?q=node/8
+* https://fedoraproject.org/wiki/Networking/CLI
+* https://docs.fedoraproject.org/en-US/Fedora/25/html/Networking_Guide/index.html
+
