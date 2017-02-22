@@ -15,3 +15,8 @@ nmcli c up veillance
 * https://fedoraproject.org/wiki/Networking/CLI
 * https://docs.fedoraproject.org/en-US/Fedora/25/html/Networking_Guide/index.html
 
+# Adding IP Addresses
+
+ip addr add 10.42.0.104/24 dev wlp1s0
+ip addr add 10.42.0.188/24 dev wlp1s0
+
