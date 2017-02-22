@@ -162,7 +162,7 @@ func gobot() {
 		}
 		defer resp.Body.Close()
 		ioutil.ReadAll(resp.Body)
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
+		time.Sleep(time.Duration(rand.Intn(50)+10) * time.Second)
 	}
 }
 
