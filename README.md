@@ -4,7 +4,7 @@
 ## Install and Test Go
 
 * Install Go from https://golang.org/
-* Set the GOPATH environment variable to $HOME/gocode or $HOME (up to you).
+* Set the GOPATH environment variable to $HOME/go or $HOME (up to you).
 * Test Go using `go version` from the command line.
 
 ## Make Sure libpcap In Installed and pcap.h is in your INCLUDE path.
