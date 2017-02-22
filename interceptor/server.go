@@ -174,8 +174,7 @@ func startServer() *Server {
 	go server.Listen()
 
 	//go simulate(server)
-
-	go gobot()
+	//go gobot()
 
 	// static files
 	http.Handle("/", http.FileServer(http.Dir("webroot")))
