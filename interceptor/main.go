@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -184,7 +185,7 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 			if !ok {
 				contentType = []string{http.DetectContentType(body)}
 			}
-			encoding := res.Header["Content-Encoding"]
+			encoding := res.Header.Get("Content-Encoding")
 			Info("HTTP/%s Response: %s URL:%s (%d%s%d%s) -> %s\n", h.ident, res.Status, req, res.ContentLength, sym, s, contentType, encoding)
 			//Info("HTTP/%s Response: %s (%d%s%d%s) -> %s\n", h.ident, res.Status, res.ContentLength, sym, s, contentType, encoding)
 
@@ -197,13 +198,26 @@ func (h *httpReader) run(wg *sync.WaitGroup) {
 					case "text/html", "text/html; charset=utf-8", "text/html;charset=utf-8", "text/html; charset=UTF-8", "text/html;charset=UTF-8":
 						// Default charset for HTML5
 						var reader io.Reader
-						//reader = bytes.NewBuffer(body)
+
 						reader = bytes.NewReader(body)
-						if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
+
+						fmt.Println("ENCODING:", encoding)
+						switch encoding {
+						case "gzip":
 							reader, err = gzip.NewReader(reader)
 							if err != nil {
 								Error("HTTP-gunzip", "Failed to gzip decode: %s", err)
 							}
+						case "deflate":
+							reader, err = zlib.NewReader(reader)
+							if err != nil {
+								Error("HTTP-gunzip", "Failed to zlib decode: %s", err)
+							} else {
+								fmt.Println("DEFLATE")
+							}
+						default:
+							//reader = bytes.NewBuffer(body)
+							//reader = bytes.NewReader(body)
 						}
 
 						tree, err := html.Parse(reader)
