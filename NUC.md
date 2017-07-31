@@ -36,7 +36,7 @@ To find the name of the interface to use use the following command:
 ```
 ip a
 ```
-This will list all the netork interfaces on the NUC.
+This will list all the network interfaces on the NUC.
 
 To stop the interceptor at any point hold down the `CTRL` key and press the `\` (backslash) key.
 
